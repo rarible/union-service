@@ -30,8 +30,11 @@ class EsCollectionRepository(
     elasticClient,
     EsCollection::class.java,
     EsCollection::collectionId.name,
-    EsCollection::collectionId
 ) {
+
+    override fun entityId(entity: EsCollection): String {
+        return entity.collectionId
+    }
 
     suspend fun search(filter: EsCollectionFilter, limit: Int?): List<EsCollectionLite> {
         val query = queryBuilderService.build(filter)

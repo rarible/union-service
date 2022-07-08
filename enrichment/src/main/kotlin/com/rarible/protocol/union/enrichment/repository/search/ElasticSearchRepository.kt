@@ -32,13 +32,14 @@ abstract class ElasticSearchRepository<T>(
     private val elasticsearchConverter: ElasticsearchConverter,
     private val elasticClient: ReactiveElasticsearchClient,
     private val entityType: Class<T>,
-    private val idFieldName: String,
-    private val idResolver: (T) -> String
+    private val idFieldName: String
 ) : EsRepository {
 
     private val logger by Logger()
 
     private var brokenEsState: Boolean = true
+
+    abstract fun entityId(entity: T): String
 
     @PostConstruct
     override fun init() = runBlocking {
@@ -82,7 +83,7 @@ abstract class ElasticSearchRepository<T>(
             index(indexName).indexNames.forEach {
                 bulkRequest.add(
                     Requests.indexRequest(it)
-                        .id(idResolver(entity))
+                        .id(entityId(entity))
                         .source(document, XContentType.JSON)
                         .create(false)
                 )

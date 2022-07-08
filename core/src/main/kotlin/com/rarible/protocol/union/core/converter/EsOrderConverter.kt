@@ -32,6 +32,7 @@ import com.rarible.protocol.union.dto.TezosOrderDataRaribleV2DataV1Dto
 import com.rarible.protocol.union.dto.TezosXTZAssetTypeDto
 import com.rarible.protocol.union.dto.UnionAddress
 import com.rarible.protocol.union.core.model.EsOrder
+import com.rarible.protocol.union.dto.ext
 
 object EsOrderConverter {
 
@@ -74,7 +75,9 @@ object EsOrderConverter {
 
     fun asset(assetDto: AssetDto): EsOrder.Asset {
         return EsOrder.Asset(
-            type = assetDto.type
+            address = assetDto.type.ext.itemId.toString(),
+            isNft = assetDto.type.ext.isNft,
+            value = assetDto.value
         )
     }
 

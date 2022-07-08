@@ -28,8 +28,11 @@ class EsOwnershipRepository(
     elasticClient,
     EsOwnership::class.java,
     EsOwnership::ownershipId.name,
-    EsOwnership::ownershipId
 ) {
+
+    override fun entityId(entity: EsOwnership): String {
+        return entity.ownershipId
+    }
 
     suspend fun search(filter: EsOwnershipFilter, limit: Int? = null): List<EsOwnership> {
         val query = queryBuilderService.build(filter)
