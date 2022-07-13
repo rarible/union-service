@@ -77,6 +77,7 @@ class EmbeddedDataMigrationJob(
 
     fun migrate(continuation: String?): Flow<String> {
         return flow {
+            logger.info("Starting to migrate Meta, state: $continuation")
             var next = continuation
             do {
                 next = migrateBatch(next)
@@ -88,7 +89,6 @@ class EmbeddedDataMigrationJob(
     }
 
     private suspend fun migrateBatch(fromId: String?): String? {
-        logger.info("Starting to migrate Meta, state: $fromId")
         counters.values.forEach { it.set(0) }
         val entries = cacheRepository.findAll<UnionMeta>(UnionMetaCacheLoader.TYPE, fromId, batchSize)
         coroutineScope {
@@ -139,6 +139,7 @@ class EmbeddedDataMigrationJob(
                 contentMigrated = true
                 embedContent(it, embedded)
             } else if (legacyEmbeddedContentUrlDetector.isLegacyEmbeddedContentUrl(it.url)) {
+                logger.info("Detect legacy embedded content: ${entry.key}")
                 // Legacy embedded content urls (from flow or eth), data should be copied to Union
                 contentUpdated = true
                 contentMigrated = true
