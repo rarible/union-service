@@ -216,7 +216,8 @@ class EmbeddedDataMigrationJob(
     }
 
     private suspend fun migrateEmbeddedContent(content: UnionMetaContent, itemId: String): UnionMetaContent {
-        val entity = dataProvider.getData(content.url, itemId) ?: return content
+        val fixedUrl = legacyEmbeddedContentUrlDetector.fixLegacy(content.url)
+        val entity = dataProvider.getData(fixedUrl, itemId) ?: return content
 
         val mimeType = content.properties?.mimeType
             ?: entity.headers.getFirst(HttpHeaders.CONTENT_TYPE) // should be NOT null

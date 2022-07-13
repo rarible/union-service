@@ -11,13 +11,29 @@ class LegacyEmbeddedContentUrlDetector(
     properties: EmbeddedContentProperties
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
-
-    init {
-        logger.info("LegacyUrls: ${properties.legacyUrls}")
-        logger.info("PublicUrl: ${properties.publicUrl}")
-    }
+    private val fixedLegacy = safeSplit(properties.legacyUrls).lastOrNull()
 
     val legacyUrlPrefixes = safeSplit(properties.legacyUrls)
+
+    init {
+
+        logger.info(buildString {
+            append("LegacyUrls: ${properties.legacyUrls}, ")
+            append("PublicUrl: ${properties.publicUrl}, ")
+            append("FixedLegacy: $fixedLegacy")
+        })
+    }
+
+    fun fixLegacy(url: String): String {
+        if (fixedLegacy != null) {
+            for (legacy in legacyUrlPrefixes) {
+                if (url.startsWith(legacy)) {
+                    return url.replaceFirst(legacy, fixedLegacy)
+                }
+            }
+        }
+        return url
+    }
 
     fun isLegacyEmbeddedContentUrl(url: String): Boolean {
         legacyUrlPrefixes.forEach {
@@ -27,5 +43,4 @@ class LegacyEmbeddedContentUrlDetector(
         }
         return false
     }
-
 }
