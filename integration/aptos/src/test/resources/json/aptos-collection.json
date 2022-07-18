@@ -1,0 +1,9 @@
+{
+  "id": "0x11c32982d04fbcc79b694647edff88c5b5d5b1a99c9d2854039175facbeefb40::APE",
+  "name": "APE",
+  "creator": "0x11c32982d04fbcc79b694647edff88c5b5d5b1a99c9d2854039175facbeefb40",
+  "maxSupply": 3,
+  "count": 1,
+  "description": "A collection of Ape tokens",
+  "uri": "https://aptoslabs.com"
+}

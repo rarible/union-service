@@ -1,5 +1,6 @@
 package com.rarible.protocol.union.api.configuration
 
+import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.rarible.core.autoconfigure.filter.cors.EnableRaribleCorsWebFilter
@@ -25,7 +26,7 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource
 class ApiConfiguration {
 
     @Bean
-    fun jsonCustomizer(): Jackson2ObjectMapperBuilderCustomizer? {
+    fun jsonCustomizer(deserializers: List<JsonDeserializer<Any>>): Jackson2ObjectMapperBuilderCustomizer? {
         return Jackson2ObjectMapperBuilderCustomizer { builder: Jackson2ObjectMapperBuilder ->
             builder.modules(
                 UnionPrimitivesJacksonModule,
@@ -33,6 +34,7 @@ class ApiConfiguration {
                 KotlinModule(),
                 JavaTimeModule()
             )
+            builder.deserializers(*deserializers.toTypedArray())
         }
     }
 

@@ -37,6 +37,7 @@ object CurrencyConverter {
             BlockchainDto.POLYGON -> com.rarible.protocol.currency.dto.BlockchainDto.POLYGON
             BlockchainDto.TEZOS -> com.rarible.protocol.currency.dto.BlockchainDto.TEZOS
             BlockchainDto.SOLANA -> com.rarible.protocol.currency.dto.BlockchainDto.SOLANA
+            BlockchainDto.APTOS -> com.rarible.protocol.currency.dto.BlockchainDto.APTOS
         }
     }
 
@@ -47,6 +48,7 @@ object CurrencyConverter {
             com.rarible.protocol.currency.dto.BlockchainDto.POLYGON -> BlockchainDto.POLYGON
             com.rarible.protocol.currency.dto.BlockchainDto.TEZOS -> BlockchainDto.TEZOS
             com.rarible.protocol.currency.dto.BlockchainDto.SOLANA -> BlockchainDto.SOLANA
+            com.rarible.protocol.currency.dto.BlockchainDto.APTOS -> BlockchainDto.APTOS
         }
     }
 }

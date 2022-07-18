@@ -1,5 +1,6 @@
 package com.rarible.protocol.union.enrichment.configuration
 
+import com.rarible.protocol.union.integration.aptos.AptosApiConfiguration
 import com.rarible.protocol.union.integration.ethereum.EthereumApiConfiguration
 import com.rarible.protocol.union.integration.ethereum.PolygonApiConfiguration
 import com.rarible.protocol.union.integration.flow.FlowApiConfiguration
@@ -20,6 +21,7 @@ import org.springframework.context.annotation.Import
         TezosApiConfiguration::class,
         SolanaApiConfiguration::class,
         ImmutablexApiConfiguration::class,
+        AptosApiConfiguration::class
     ]
 )
 class EnrichmentApiConfiguration

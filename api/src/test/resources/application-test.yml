@@ -58,6 +58,9 @@ protocol:
   union:
     subscriber:
       broker-replica-set: ${kafka.hosts}
+  aptos:
+    subscriber:
+      broker-replica-set: ${kafka.hosts}
 
 logging:
   level:

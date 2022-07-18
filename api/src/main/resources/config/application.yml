@@ -99,6 +99,10 @@ integration:
     client:
       url: ${consul.immutablex.api.baseUrl:}
     apiKey: ${consul.immutablex.api.key:}
+  aptos:
+    enabled: ${consul.aptos.enabled:false}
+    client:
+      url: ${consul.aptos.api.baseUrl:}
 common:
   producer:
     broker-replica-set: ${kafka.hosts}

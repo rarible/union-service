@@ -1,5 +1,6 @@
 package com.rarible.protocol.union.enrichment.configuration
 
+import com.rarible.protocol.union.integration.aptos.AptosConsumerConfiguration
 import com.rarible.protocol.union.integration.ethereum.EthereumConsumerConfiguration
 import com.rarible.protocol.union.integration.ethereum.PolygonConsumerConfiguration
 import com.rarible.protocol.union.integration.flow.FlowConsumerConfiguration
@@ -18,7 +19,8 @@ import org.springframework.context.annotation.Import
         FlowConsumerConfiguration::class,
         TezosConsumerConfiguration::class,
         ImmutablexConsumerConfiguration::class,
-        SolanaConsumerConfiguration::class
+        SolanaConsumerConfiguration::class,
+        AptosConsumerConfiguration::class
     ]
 )
 class EnrichmentConsumerConfiguration

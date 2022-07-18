@@ -49,14 +49,15 @@
         <rarible.core.version>2.4.11</rarible.core.version>
         <rarible.ethereum.version>1.4.0</rarible.ethereum.version>
 
-        <rarible.protocol.currency.version>1.23.6</rarible.protocol.currency.version>
+        <rarible.protocol.currency.version>1.23.7</rarible.protocol.currency.version>
         <rarible.protocol.ethereum.version>1.30.1</rarible.protocol.ethereum.version>
         <rarible.protocol.flow.version>2.3.19</rarible.protocol.flow.version>
         <rarible.protocol.tezos.version>1.0.5</rarible.protocol.tezos.version>
         <rarible.protocol.solana.version>0.1.42</rarible.protocol.solana.version>
         <rarible.protocol.tezos.api.version>1.0.54</rarible.protocol.tezos.api.version>
+        <rarible.protocol.aptos.version>1.0</rarible.protocol.aptos.version>
 
-        <rarible.protocol.union.version>1.31.4</rarible.protocol.union.version>
+        <rarible.protocol.union.version>1.31.5</rarible.protocol.union.version>
 
         <dev-jna.version>5.7.0</dev-jna.version>
     </properties>
@@ -181,6 +182,20 @@
             <dependency>
                 <groupId>com.rarible.protocol.union</groupId>
                 <artifactId>rarible-union-integration-immutablex</artifactId>
+                <classifier>tests</classifier>
+                <type>test-jar</type>
+                <scope>test</scope>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.rarible.protocol.union</groupId>
+                <artifactId>rarible-union-integration-aptos</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.rarible.protocol.union</groupId>
+                <artifactId>rarible-union-integration-aptos</artifactId>
                 <classifier>tests</classifier>
                 <type>test-jar</type>
                 <scope>test</scope>
@@ -404,6 +419,23 @@
                 <groupId>com.rarible.protocol.solana</groupId>
                 <artifactId>solana-protocol-subscriber</artifactId>
                 <version>${rarible.protocol.solana.version}</version>
+            </dependency>
+
+            <!-- ================== Aptos =================== -->
+            <dependency>
+                <groupId>com.rarible.protocol.aptos</groupId>
+                <artifactId>aptos-protocol-model</artifactId>
+                <version>${rarible.protocol.aptos.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.rarible.protocol.aptos</groupId>
+                <artifactId>aptos-protocol-client-starter</artifactId>
+                <version>${rarible.protocol.aptos.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.rarible.protocol.aptos</groupId>
+                <artifactId>aptos-protocol-subscriber-starter</artifactId>
+                <version>${rarible.protocol.aptos.version}</version>
             </dependency>
 
             <!-- ================== Other =================== -->

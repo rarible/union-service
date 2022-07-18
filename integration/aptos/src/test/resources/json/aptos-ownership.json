@@ -1,0 +1,11 @@
+{
+  "id": "0x11c32982d04fbcc79b694647edff88c5b5d5b1a99c9d2854039175facbeefb40::APE::DEGAN APE::0x7ec8f962139943bc41c17a72e782b7729b1625cf65ed7812152a5677364a4f88",
+  "tokenId": "0x11c32982d04fbcc79b694647edff88c5b5d5b1a99c9d2854039175facbeefb40::APE::DEGAN APE",
+  "contract": "0x1::Token",
+  "collection": "0x11c32982d04fbcc79b694647edff88c5b5d5b1a99c9d2854039175facbeefb40::APE",
+  "owner": "0x7ec8f962139943bc41c17a72e782b7729b1625cf65ed7812152a5677364a4f88",
+  "value": 1,
+  "source": "TRANSFER",
+  "createdAt": "2018-12-10T13:45:00.000Z",
+  "creator": "0x11c32982d04fbcc79b694647edff88c5b5d5b1a99c9d2854039175facbeefb40"
+}

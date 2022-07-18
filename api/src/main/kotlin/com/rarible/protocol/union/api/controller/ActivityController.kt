@@ -11,9 +11,9 @@ import com.rarible.protocol.union.dto.BlockchainDto
 import com.rarible.protocol.union.dto.SyncSortDto
 import com.rarible.protocol.union.dto.SyncTypeDto
 import com.rarible.protocol.union.dto.UserActivityTypeDto
+import java.time.Instant
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
-import java.time.Instant
 
 @RestController
 class ActivityController(
@@ -62,7 +62,7 @@ class ActivityController(
     ): ResponseEntity<ActivitiesDto> {
         val overrideSelect = if (newSearchEngine == true) OverrideSelect.ELASTIC else null
         if (collection.isEmpty()) throw UnionException("No any collection param in query")
-        val result = activitySourceSelector.getActivitiesByCollection(type, collection, continuation, cursor, size, sort, overrideSelect)
+        val result = activitySourceSelector.getActivitiesByCollection(type, collection.first() /** todo support string collection */, continuation, cursor, size, sort, overrideSelect)
         return ResponseEntity.ok(result)
     }
 

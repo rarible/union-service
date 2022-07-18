@@ -1,0 +1,11 @@
+{
+  "id": "0x11c32982d04fbcc79b694647edff88c5b5d5b1a99c9d2854039175facbeefb40::APE::DEGAN APE",
+  "contract": "0x1::Token",
+  "creator": "0x11c32982d04fbcc79b694647edff88c5b5d5b1a99c9d2854039175facbeefb40",
+  "supply": 1,
+  "royalties": [],
+  "deleted": false,
+  "max": 2,
+  "uri": "https://xdc7mlwypvsqdrbp3fq2jywgiapdod5fck733ilywdvo3slng3uq.arweave.net/uMX2Lth9ZQHEL9lhpOLGQB43D6USv72heLDq7cltNuk",
+  "mintedAt": "2018-12-10T13:45:00.000Z"
+}

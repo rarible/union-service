@@ -38,6 +38,11 @@ logging:
   level:
     org.springframework.context.annotation: "DEBUG"
 
+protocol:
+  aptos:
+    subscriber:
+      broker-replica-set: ${kafka.hosts}
+
 worker:
   search-reindex:
     activity:

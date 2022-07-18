@@ -101,6 +101,10 @@ integration:
           deposits: 600
           withdrawals: 600
           orders: 600
+  aptos:
+    enabled: true
+    client:
+      url: "http://localhost:8080"
 
 meta:
   embedded:
@@ -120,3 +124,8 @@ listener:
     enabled: false
     rate: PT1M
     delay: PT60M
+
+protocol:
+  aptos:
+    subscriber:
+      broker-replica-set: ${kafka.hosts}

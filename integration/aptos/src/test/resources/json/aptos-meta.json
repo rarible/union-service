@@ -1,0 +1,17 @@
+{
+  "collection": "APE",
+  "name": "DEGAN APE",
+  "description": "this is metadata of degan ape",
+  "attributes": [
+    {
+      "key": "Background",
+      "value": "green"
+    }
+  ],
+  "content": [
+    {
+      "@type": "IMAGE",
+      "url": "https://arweave.net/YROEEbZbcOFLV0N1cEQG9zj7QSIFGlL1etNXNV-PXlY?ext=png"
+    }
+  ]
+}
