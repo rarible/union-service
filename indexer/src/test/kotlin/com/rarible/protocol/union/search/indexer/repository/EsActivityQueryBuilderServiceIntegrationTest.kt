@@ -61,6 +61,7 @@ internal class EsActivityQueryBuilderServiceIntegrationTest {
         val toSkip1 = randomEsActivity().copy(blockchain = BlockchainDto.ETHEREUM)
         val toSkip2 = randomEsActivity().copy(blockchain = BlockchainDto.POLYGON)
         repository.saveAll(listOf(toFind1, toFind2, toSkip1, toSkip2))
+        repository.refresh()
 
         // when
         val result = repository.search(filter, sort, null)
@@ -72,12 +73,14 @@ internal class EsActivityQueryBuilderServiceIntegrationTest {
     @Test
     fun `should query by activity type`() = runBlocking<Unit> {
         // given
-        val filter = ElasticActivityQueryGenericFilter(activityTypes = setOf(ActivityTypeDto.SELL, ActivityTypeDto.BURN))
+        val filter =
+            ElasticActivityQueryGenericFilter(activityTypes = setOf(ActivityTypeDto.SELL, ActivityTypeDto.BURN))
         val toFind1 = randomEsActivity().copy(type = ActivityTypeDto.SELL)
         val toFind2 = randomEsActivity().copy(type = ActivityTypeDto.BURN)
         val toSkip1 = randomEsActivity().copy(type = ActivityTypeDto.BID)
         val toSkip2 = randomEsActivity().copy(type = ActivityTypeDto.MINT)
         repository.saveAll(listOf(toFind1, toFind2, toSkip1, toSkip2))
+        repository.refresh()
 
         // when
         val result = repository.search(filter, sort, null)
@@ -95,6 +98,7 @@ internal class EsActivityQueryBuilderServiceIntegrationTest {
         val toSkip1 = randomEsActivity().copy(userFrom = "0x01", userTo = "0x00")
         val toSkip2 = randomEsActivity().copy(userFrom = "0x03", userTo = null)
         repository.saveAll(listOf(toFind1, toFind2, toSkip1, toSkip2))
+        repository.refresh()
 
         // when
         val result = repository.search(filter, sort, null)
@@ -164,6 +168,7 @@ internal class EsActivityQueryBuilderServiceIntegrationTest {
         val toSkip2 = randomEsActivity().copy(item = "0x06:666")
 
         repository.saveAll(listOf(toFind1, toFind2, toSkip1, toSkip2))
+        repository.refresh()
 
         // when
         val result = repository.search(filter, sort, null)
@@ -209,12 +214,14 @@ internal class EsActivityQueryBuilderServiceIntegrationTest {
     @Test
     fun `should query between from and to`() = runBlocking<Unit> {
         // given
-        val filter = ElasticActivityQueryGenericFilter(from = Instant.ofEpochMilli(500), to = Instant.ofEpochMilli(1000))
+        val filter =
+            ElasticActivityQueryGenericFilter(from = Instant.ofEpochMilli(500), to = Instant.ofEpochMilli(1000))
         val toFind1 = randomEsActivity().copy(date = Instant.ofEpochMilli(500))
         val toFind2 = randomEsActivity().copy(date = Instant.ofEpochMilli(1000))
         val toSkip1 = randomEsActivity().copy(date = Instant.ofEpochMilli(250))
         val toSkip2 = randomEsActivity().copy(date = Instant.ofEpochMilli(2000))
         repository.saveAll(listOf(toFind1, toFind2, toSkip1, toSkip2))
+        repository.refresh()
 
         // when
         val result = repository.search(filter, sort, null)
@@ -274,6 +281,7 @@ internal class EsActivityQueryBuilderServiceIntegrationTest {
             date = Instant.ofEpochMilli(1500),
         )
         repository.saveAll(listOf(toFind1, toFind2, toSkip1, toSkip2, toSkip3))
+        repository.refresh()
 
         // when
         val result = repository.search(filter, sort, null)

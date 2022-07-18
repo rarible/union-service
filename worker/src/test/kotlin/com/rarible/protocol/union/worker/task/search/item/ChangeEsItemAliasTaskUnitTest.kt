@@ -8,10 +8,10 @@ import com.rarible.protocol.union.core.elasticsearch.IndexService
 import com.rarible.protocol.union.core.model.EsItem
 import com.rarible.protocol.union.core.model.elasticsearch.EntityDefinitionExtended
 import com.rarible.protocol.union.core.model.elasticsearch.EsEntity
-import com.rarible.protocol.union.dto.ActivityTypeDto
 import com.rarible.protocol.union.dto.BlockchainDto
 import com.rarible.protocol.union.enrichment.repository.search.EsItemRepository
 import com.rarible.protocol.union.worker.task.search.ChangeAliasTaskParam
+import com.rarible.protocol.union.worker.task.search.ItemTaskParam
 import com.rarible.protocol.union.worker.task.search.ParamFactory
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -34,8 +34,10 @@ internal class ChangeEsItemAliasTaskUnitTest {
     private val failedTask = mockk<Task> {
         every { lastStatus } returns TaskStatus.ERROR
     }
-    private val reindexEthereum = ItemTaskParam(BlockchainDto.ETHEREUM, "test_item")
-    private val reindexFlow = ItemTaskParam(BlockchainDto.FLOW, "test_item")
+    private val reindexEthereum = ItemTaskParam(
+        versionData = 1, settingsHash = "", BlockchainDto.ETHEREUM, "test_item")
+    private val reindexFlow = ItemTaskParam(
+        versionData = 1, settingsHash = "", BlockchainDto.FLOW, "test_item")
 
     private val switchAlias = ChangeAliasTaskParam(
         "test_item",

@@ -3,6 +3,8 @@ package com.rarible.protocol.union.worker.task.search.item
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.rarible.core.common.nowMillis
+import com.rarible.core.task.Task
+import com.rarible.core.task.TaskRepository
 import com.rarible.core.test.data.randomAddress
 import com.rarible.core.test.data.randomBigInt
 import com.rarible.protocol.union.dto.BlockchainDto
@@ -17,6 +19,7 @@ import com.rarible.protocol.union.enrichment.service.query.item.ItemApiMergeServ
 import com.rarible.protocol.union.worker.config.BlockchainReindexProperties
 import com.rarible.protocol.union.worker.config.ItemReindexProperties
 import com.rarible.protocol.union.worker.metrics.SearchTaskMetricFactory
+import com.rarible.protocol.union.worker.task.search.ItemTaskParam
 import com.rarible.protocol.union.worker.task.search.ParamFactory
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.coEvery
@@ -24,6 +27,7 @@ import io.mockk.coVerifyAll
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.reactor.mono
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import java.math.BigInteger
@@ -34,6 +38,12 @@ internal class ItemTaskTest {
         coEvery {
             saveAll(any(), any(), any())
         } answers { arg(0) }
+    }
+
+    private val taskRepository = mockk<TaskRepository> {
+        coEvery {
+            findByTypeAndParam(any(), any())
+        } returns mono { Task(type = "", param = "", running = true) }
     }
 
     private val ethItem = ItemDto(
@@ -103,12 +113,12 @@ internal class ItemTaskTest {
                 ItemReindexProperties(
                     enabled = true,
                     blockchains = listOf(BlockchainReindexProperties(enabled = true, BlockchainDto.ETHEREUM))
-                ), client, paramFactory, repo, searchTaskMetricFactory
+                ), client, paramFactory, repo, searchTaskMetricFactory, taskRepository
             )
             task.runLongTask(
                 null, paramFactory.toString(
                     ItemTaskParam(
-                        blockchain = BlockchainDto.ETHEREUM, index = "test_index"
+                        versionData = 1, settingsHash = "", blockchain = BlockchainDto.ETHEREUM, index = "test_index"
                     )
                 )
             ).toList()

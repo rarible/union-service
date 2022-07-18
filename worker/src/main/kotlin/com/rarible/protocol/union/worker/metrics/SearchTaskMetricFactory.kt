@@ -6,7 +6,7 @@ import com.rarible.protocol.union.core.model.elasticsearch.EsEntity
 import com.rarible.protocol.union.dto.ActivityTypeDto
 import com.rarible.protocol.union.dto.BlockchainDto
 import com.rarible.protocol.union.worker.config.WorkerProperties
-import com.rarible.protocol.union.worker.task.search.ownership.OwnershipTaskParam
+import com.rarible.protocol.union.worker.task.search.OwnershipTaskParam
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tag
 import org.springframework.stereotype.Component

@@ -4,6 +4,9 @@ import com.rarible.core.common.nowMillis
 import com.rarible.core.test.data.randomAddress
 import com.rarible.core.test.data.randomLong
 import com.rarible.core.test.data.randomString
+import com.rarible.protocol.union.core.elasticsearch.EsHelper.createAlias
+import com.rarible.protocol.union.core.elasticsearch.EsHelper.createIndex
+import com.rarible.protocol.union.core.elasticsearch.EsNameResolver
 import com.rarible.protocol.union.core.es.ElasticsearchTestBootstrapper
 import com.rarible.protocol.union.core.model.EsItem
 import com.rarible.protocol.union.core.model.EsItemGenericFilter
@@ -23,6 +26,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
+import org.springframework.data.elasticsearch.core.ReactiveElasticsearchOperations
 import org.springframework.data.elasticsearch.core.query.NativeSearchQuery
 import org.springframework.test.context.ContextConfiguration
 import java.time.temporal.ChronoUnit
@@ -37,6 +41,14 @@ internal class EsItemRepositoryFt {
 
     @Autowired
     private lateinit var elasticsearchTestBootstrapper: ElasticsearchTestBootstrapper
+
+    @Autowired
+    private lateinit var esNameResolver: EsNameResolver
+
+    @Autowired
+    private lateinit var esOperations: ReactiveElasticsearchOperations
+
+    private val newVersionData = EsItem.VERSION + 1
 
     @BeforeEach
     fun setUp() = runBlocking<Unit> {
@@ -57,6 +69,41 @@ internal class EsItemRepositoryFt {
             creators = listOf("0x01"),
             mintedAt = now,
             lastUpdatedAt = now
+        )
+
+        val id = repository.save(esItem).itemId
+        val found = repository.findById(id)
+        assertThat(found).isEqualTo(esItem)
+    }
+
+    @Test
+    fun `should save and read to new index`(): Unit = runBlocking {
+
+        val now = nowMillis().truncatedTo(ChronoUnit.SECONDS)
+        val esItem = EsItem(
+            itemId = "0x03",
+            blockchain = BlockchainDto.ETHEREUM,
+            collection = "0x02",
+            name = "TestItem",
+            description = "description",
+            traits = listOf(EsTrait("long", "10"), EsTrait("test", "eye")),
+            creators = listOf("0x01"),
+            mintedAt = now,
+            lastUpdatedAt = now
+        )
+
+        val definition = repository.entityDefinition
+        val newIndexName = definition.indexName(minorVersion = newVersionData)
+        createIndex(
+            reactiveElasticSearchOperations = esOperations,
+            name = newIndexName,
+            mapping = definition.mapping,
+            settings = definition.settings
+        )
+        createAlias(
+            reactiveElasticSearchOperations = esOperations,
+            indexName = newIndexName,
+            alias = definition.writeAliasName
         )
 
         val id = repository.save(esItem).itemId
@@ -177,7 +224,9 @@ internal class EsItemRepositoryFt {
         assertThat(result1.size).isEqualTo(50)
 
         val result2 = repository.search(
-            EsItemGenericFilter(mintedFrom = now.plusSeconds(21), mintedTo = now.plusSeconds(50)), EsItemSort.DEFAULT, 200
+            EsItemGenericFilter(mintedFrom = now.plusSeconds(21), mintedTo = now.plusSeconds(50)),
+            EsItemSort.DEFAULT,
+            200
         )
 
         assertThat(result2.size).isEqualTo(30)

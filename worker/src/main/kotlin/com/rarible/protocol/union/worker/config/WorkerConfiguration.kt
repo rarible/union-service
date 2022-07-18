@@ -16,6 +16,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
+import org.springframework.context.annotation.Profile
 import org.springframework.data.elasticsearch.core.ReactiveElasticsearchOperations
 
 @Configuration
@@ -58,6 +59,7 @@ class WorkerConfiguration(
     @FlowPreview
     @ExperimentalCoroutinesApi
     @Bean(initMethod = "bootstrap")
+    @Profile("!test")
     fun elasticsearchBootstrap(
         reactiveElasticSearchOperations: ReactiveElasticsearchOperations,
         esNameResolver: EsNameResolver,
@@ -72,7 +74,6 @@ class WorkerConfiguration(
             esOperations = reactiveElasticSearchOperations,
             entityDefinitions = EsEntitiesConfig.prodEsEntities(),
             reindexSchedulingService = reindexService,
-            forceUpdate = emptySet(),
             indexService = indexService,
             repositories = esRepositories,
             restHighLevelClient = highLevelClient,

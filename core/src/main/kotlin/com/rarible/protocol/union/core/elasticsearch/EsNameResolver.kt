@@ -23,7 +23,8 @@ class EsNameResolver(
             aliasName = aliasName(entity),
             writeAliasName = writeAliasName(entity),
             settings = entity.settings,
-            reindexTask = entity.reindexTask
+            reindexTask = entity.reindexTask,
+            settingsHash = entity.settingsHash
         )
 
     private fun indexRootName(entity: EntityDefinition) =

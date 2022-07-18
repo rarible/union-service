@@ -15,6 +15,7 @@ import org.elasticsearch.action.bulk.BulkRequest
 import org.elasticsearch.action.support.WriteRequest
 import org.elasticsearch.client.Requests
 import org.elasticsearch.common.xcontent.XContentType
+import org.springframework.data.elasticsearch.BulkFailureException
 import org.springframework.data.elasticsearch.client.reactive.ReactiveElasticsearchClient
 import org.springframework.data.elasticsearch.core.ReactiveElasticsearchOperations
 import org.springframework.data.elasticsearch.core.convert.ElasticsearchConverter
@@ -75,7 +76,8 @@ abstract class ElasticSearchRepository<T>(
             throw IllegalStateException("No indexes to save")
         }
 
-        val bulkRequest = BulkRequest().setRefreshPolicy(refreshPolicy)
+        val bulkRequest = BulkRequest()
+            .setRefreshPolicy(refreshPolicy)
 
         for (entity in entities) {
             val document = elasticsearchConverter.mapObject(entity)
@@ -89,8 +91,13 @@ abstract class ElasticSearchRepository<T>(
             }
         }
 
-        elasticClient.bulk(bulkRequest).awaitFirst()
-        return entities
+        val bulkResponse = elasticClient.bulk(bulkRequest).awaitFirst()
+        return if (bulkResponse.hasFailures()) {
+            throw BulkFailureException(
+                bulkResponse.buildFailureMessage(),
+                emptyMap()
+            )
+        } else entities
     }
 
     suspend fun deleteAll(ids: List<String>): Long? {

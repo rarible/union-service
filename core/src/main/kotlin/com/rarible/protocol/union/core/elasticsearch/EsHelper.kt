@@ -1,6 +1,7 @@
 package com.rarible.protocol.union.core.elasticsearch
 
 import com.rarible.core.logging.Logger
+import com.rarible.protocol.union.core.model.elasticsearch.EntityDefinitionExtended
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest
@@ -30,17 +31,21 @@ object EsHelper {
         reactiveElasticSearchOperations: ReactiveElasticsearchOperations,
         alias: String,
         fromIndex: String,
-        toIndex: String
+        toIndex: String,
+        definition: EntityDefinitionExtended
     ) {
-        removeAlias(reactiveElasticSearchOperations, fromIndex, alias)
+        removeAlias(reactiveElasticSearchOperations, fromIndex, alias, definition)
         createAlias(reactiveElasticSearchOperations, toIndex, alias)
     }
 
     suspend fun removeAlias(
-        reactiveElasticSearchOperations: ReactiveElasticsearchOperations, indexName: String, alias: String
+        reactiveElasticSearchOperations: ReactiveElasticsearchOperations,
+        indexName: String,
+        alias: String,
+        definition: EntityDefinitionExtended
     ) {
         logger.info("Removing alias '$alias' from '$indexName'")
-        val realName = getRealName(reactiveElasticSearchOperations, indexName)
+        val realName = getRealName(reactiveElasticSearchOperations, indexName, definition)
         val existingAliases = getAliasesOfIndex(reactiveElasticSearchOperations, realName)
         if (alias !in existingAliases) {
             logger.info("Alias '$alias' does not exist in '$indexName' ('$realName')")
@@ -53,31 +58,38 @@ object EsHelper {
     }
 
     suspend fun createAlias(
-        reactiveElasticSearchOperations: ReactiveElasticsearchOperations, indexName: String, alias: String
+        reactiveElasticSearchOperations: ReactiveElasticsearchOperations,
+        indexName: String,
+        alias: String,
+//        writeIndex: Boolean
     ) {
         logger.info("Adding alias '$alias' to '$indexName'")
-        val realName = getRealName(reactiveElasticSearchOperations, indexName)
         val request = IndicesAliasesRequest().addAliasAction(
-            IndicesAliasesRequest.AliasActions.add().index(realName).alias(alias)
+            IndicesAliasesRequest.AliasActions.add().index(indexName).alias(alias) //.writeIndex(writeIndex)
         )
         reactiveElasticSearchOperations.execute { it.indices().updateAliases(request) }.awaitFirstOrNull()
     }
 
     suspend fun getRealName(
-        esOperations: ReactiveElasticsearchOperations, indexName: String
+        esOperations: ReactiveElasticsearchOperations, aliasName: String, definition: EntityDefinitionExtended
     ): String? {
 
-        val exists = esOperations.execute { it.indices().existsIndex(GetIndexRequest(indexName)) }.awaitFirst()
+        val exists = esOperations.execute { it.indices().existsIndex(GetIndexRequest(aliasName)) }.awaitFirst()
 
         return if (exists) {
-            val response = esOperations.execute { it.indices().getIndex(GetIndexRequest(indexName)) }.awaitFirst()
-            response.aliases.entries.first().key
+            val response = esOperations.execute { it.indices().getIndex(GetIndexRequest(aliasName)) }.awaitFirst()
+            val indexVersionsMap = response.aliases.entries.map { definition.getVersion(it.key) to it.key }.toMap()
+            return indexVersionsMap.keys.maxOfOrNull { it }?.let { indexVersionsMap[it] }
         } else null
     }
 
     suspend fun existsIndexesForEntity(
         esOperations: ReactiveElasticsearchOperations, indexPrefix: String
     ): Boolean = esOperations.execute { it.indices().existsIndex(GetIndexRequest("$indexPrefix*")) }.awaitFirst()
+
+    suspend fun existsIndex(
+        esOperations: ReactiveElasticsearchOperations, index: String
+    ): Boolean = esOperations.execute { it.indices().existsIndex(GetIndexRequest(index)) }.awaitFirst()
 
     suspend fun getIndexesByAlias(
         esOperations: ReactiveElasticsearchOperations, indexRootName: String
@@ -90,6 +102,10 @@ object EsHelper {
             response.aliases.entries.map { it.key }
         } else emptyList()
     }
+
+    suspend fun getMapping( esOperations: ReactiveElasticsearchOperations, indexName: String): String? =
+        esOperations.execute { it.indices().getIndex(GetIndexRequest(indexName)) }.awaitFirst()
+             .mappings[indexName]?.source()?.string()
 
     private suspend fun getAliasesOfIndex(
         reactiveElasticSearchOperations: ReactiveElasticsearchOperations, indexName: String?
