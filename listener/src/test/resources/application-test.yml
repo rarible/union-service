@@ -105,6 +105,12 @@ integration:
     enabled: true
     client:
       url: "http://localhost:8080"
+    consumer:
+      broker-replica-set: ${kafka.hosts}
+      workers:
+        item: 1
+        activity: 1
+        collection: 1
 
 meta:
   embedded:

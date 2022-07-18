@@ -23,4 +23,5 @@ class AptosApiConfiguration {
 
     @Bean
     fun aptosRoyaltiesDeserializer(): AptosRoyaltiesDeserializer = AptosRoyaltiesDeserializer()
+
 }
