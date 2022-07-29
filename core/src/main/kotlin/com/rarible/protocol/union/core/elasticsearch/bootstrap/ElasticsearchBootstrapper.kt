@@ -101,22 +101,6 @@ class ElasticsearchBootstrapper(
         val currentEntityMetadata = indexService.getEntityMetadata(definition, realIndexName)
         logger.info("Current entity metadata = $currentEntityMetadata")
         when {
-            currentEntityMetadata.mapping != definition.mapping -> {
-                updateMappings(
-                    realIndexName = getRealName(esOperations, definition.writeAliasName, definition)
-                        ?: throw IllegalStateException("Not exists index for ${definition.writeAliasName}"),
-                    definition = definition
-                )
-                if (currentEntityMetadata.versionData != definition.versionData) {
-                    if (reindexSchedulingService.checkReindexInProgress(definition)) {
-                        logger.info("Reindexing tasks for entity ${definition.entity} was started")
-                        return
-                    }
-                    reindexSchedulingService.stopTasksIfExists(definition)
-                    scheduleReindex(definition, realIndexName)
-                }
-                return
-            }
             currentEntityMetadata.settings != definition.settings ||
                 currentEntityMetadata.versionData != definition.versionData -> {
                 if (reindexSchedulingService.checkReindexInProgress(definition)) {
@@ -135,6 +119,19 @@ class ElasticsearchBootstrapper(
                     val newIndexName = definition.indexName(minorVersion = indexVersion + 1)
                     recreateIndex(realIndexName, newIndexName, definition)
                 }
+            }
+            currentEntityMetadata.mapping != definition.mapping -> {
+                updateMappings(
+                    realIndexName = getRealName(esOperations, definition.writeAliasName, definition)
+                        ?: throw IllegalStateException("Not exists index for ${definition.writeAliasName}"),
+                    definition = definition
+                )
+                if (reindexSchedulingService.checkReindexInProgress(definition)) {
+                    logger.info("Reindexing tasks for entity ${definition.entity} was started")
+                    return
+                }
+                reindexSchedulingService.stopTasksIfExists(definition)
+                scheduleReindex(definition, realIndexName)
             }
             else -> logger.info("Index ${definition.entity} mapping and settings has not changed. Skipping index update")
         }

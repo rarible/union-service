@@ -55,19 +55,16 @@ class IndexService(
         realIndexName: String
     ): CurrentEntityDefinition {
         val id = EsEntityMetadataType.MAPPING.getId(definition)
-        var response = esMetadataRepository.findById(id)
+        var response: EsMetadata = esMetadataRepository.findById(id)
+            ?: throw RuntimeException("Index ${definition.entity} exists with name $realIndexName but metadata does not. Update metadata")
 
-        if (response == null) {
-            innerUpdateMetadata(definition)
-            throw RuntimeException("Index ${definition.entity} exists with name $realIndexName but metadata does not. Update metadata")
-        }
         val mapping = response.content
 
-        response = esMetadataRepository.findById(EsEntityMetadataType.SETTINGS.getId(definition))
-        val settings: String = response?.content ?: "{}"
+        response = esMetadataRepository.findById(EsEntityMetadataType.SETTINGS.getId(definition))!!
+        val settings: String = response.content
 
-        response = esMetadataRepository.findById(EsEntityMetadataType.VERSION_DATA.getId(definition))
-        val version: Int = response?.content?.toInt() ?: 1
+        response = esMetadataRepository.findById(EsEntityMetadataType.VERSION_DATA.getId(definition))!!
+        val version: Int = response.content.toInt()
 
         return CurrentEntityDefinition(
             mapping = mapping,

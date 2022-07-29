@@ -1,5 +1,6 @@
 package com.rarible.protocol.union.core.es
 
+import com.rarible.core.common.mapAsync
 import com.rarible.core.logging.Logger
 import com.rarible.protocol.union.core.elasticsearch.EsHelper.createAlias
 import com.rarible.protocol.union.core.elasticsearch.EsHelper.createIndex
@@ -10,8 +11,6 @@ import com.rarible.protocol.union.core.elasticsearch.EsRepository
 import com.rarible.protocol.union.core.elasticsearch.bootstrap.metadataMappingIndex
 import com.rarible.protocol.union.core.model.elasticsearch.EntityDefinition
 import com.rarible.protocol.union.core.model.elasticsearch.EntityDefinitionExtended
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitSingle
@@ -73,39 +72,33 @@ class ElasticsearchTestBootstrapper(
         )
     }
 
-    suspend fun deleteDataInAllIndex(metadataIndexName: String): List<Any> = coroutineScope {
+    suspend fun deleteDataInAllIndex(metadataIndexName: String) = coroutineScope {
         val indexesByAlias = getIndexesByAlias(esOperations, "")
         indexesByAlias
             .filter { it != metadataIndexName }
-            .map { index ->
-                async {
-                    restHighLevelClient.deleteBy { request ->
-                        request
-                            .setRefresh(true)
-                            .setQuery(MatchAllQueryBuilder())
-                            .indices(index)
-                    }
-                        .doOnNext {
+            .mapAsync { index ->
+                restHighLevelClient.deleteBy { request ->
+                    request
+                        .setRefresh(true)
+                        .setQuery(MatchAllQueryBuilder())
+                        .indices(index)
+                }
+                    .doOnNext {
                         logger.info("deleted all data for index '$index'")
                     }.awaitSingle()
-                }
             }
-            .awaitAll()
     }
 
     suspend fun deleteAllIndexes() = coroutineScope {
         val indexesByAlias = getIndexesByAlias(esOperations, "")
         indexesByAlias
-            .map { index ->
-                async {
-                    esOperations.execute {
-                        it.indices().deleteIndex { request ->
-                            request.indices(index)
-                        }
-                    }.awaitFirst()
-                }
+            .mapAsync { index ->
+                esOperations.execute {
+                    it.indices().deleteIndex { request ->
+                        request.indices(index)
+                    }
+                }.awaitFirst()
             }
-            .awaitAll()
     }
 
     companion object {

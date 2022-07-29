@@ -60,12 +60,11 @@ object EsHelper {
     suspend fun createAlias(
         reactiveElasticSearchOperations: ReactiveElasticsearchOperations,
         indexName: String,
-        alias: String,
-//        writeIndex: Boolean
+        alias: String
     ) {
         logger.info("Adding alias '$alias' to '$indexName'")
         val request = IndicesAliasesRequest().addAliasAction(
-            IndicesAliasesRequest.AliasActions.add().index(indexName).alias(alias) //.writeIndex(writeIndex)
+            IndicesAliasesRequest.AliasActions.add().index(indexName).alias(alias)
         )
         reactiveElasticSearchOperations.execute { it.indices().updateAliases(request) }.awaitFirstOrNull()
     }
@@ -103,9 +102,9 @@ object EsHelper {
         } else emptyList()
     }
 
-    suspend fun getMapping( esOperations: ReactiveElasticsearchOperations, indexName: String): String? =
+    suspend fun getMapping(esOperations: ReactiveElasticsearchOperations, indexName: String): String? =
         esOperations.execute { it.indices().getIndex(GetIndexRequest(indexName)) }.awaitFirst()
-             .mappings[indexName]?.source()?.string()
+            .mappings[indexName]?.source()?.string()
 
     private suspend fun getAliasesOfIndex(
         reactiveElasticSearchOperations: ReactiveElasticsearchOperations, indexName: String?

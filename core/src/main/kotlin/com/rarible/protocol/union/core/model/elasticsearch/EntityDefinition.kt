@@ -1,7 +1,6 @@
 package com.rarible.protocol.union.core.model.elasticsearch
 
-import java.math.BigInteger
-import java.security.MessageDigest
+import com.rarible.protocol.union.core.model.elasticsearch.SettingsHasher.md5
 
 data class EntityDefinition(
     val entity: EsEntity,
@@ -11,9 +10,4 @@ data class EntityDefinition(
 ) {
     val reindexTask = "${entity.name}_REINDEX"
     val settingsHash = md5(settings)
-}
-
-fun md5(input: String): String {
-    val md = MessageDigest.getInstance("MD5")
-    return BigInteger(1, md.digest(input.toByteArray())).toString(16).padStart(32, '0')
 }

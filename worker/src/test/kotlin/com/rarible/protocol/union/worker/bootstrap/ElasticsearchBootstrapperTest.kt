@@ -60,14 +60,8 @@ internal class ElasticsearchBootstrapperTest {
     private lateinit var newBootstrapper: ElasticsearchBootstrapper
     private lateinit var elasticsearchTestBootstrapper: ElasticsearchTestBootstrapper
 
-    private val loadMapping = "{\n" +
-        "  \"dynamic\": \"false\",\n" +
-        "  \"properties\": {\n" +
-        "    \"changedFieldForTest\": {\n" +
-        "      \"type\": \"keyword\"\n" +
-        "    }\n" +
-        "  }\n" +
-        "}"
+    private val loadMapping =
+        "{\"dynamic\":\"false\",\"properties\":{\"changedFieldForTest\":{\"type\":\"keyword\"}}}"
 
     @BeforeEach
     fun init() = runBlocking<Unit> {
@@ -146,7 +140,6 @@ internal class ElasticsearchBootstrapperTest {
     fun `should update only mappings`() = runBlocking<Unit> {
         bootstrapper.bootstrap()
         clearMocks(reindexSchedulingService)
-
 
         val entityDefinitionNew = EntityDefinition(
             entityDefinitionExtended.entity,
