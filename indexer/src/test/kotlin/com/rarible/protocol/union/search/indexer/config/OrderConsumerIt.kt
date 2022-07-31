@@ -43,7 +43,7 @@ class OrderConsumerIt {
         producer.send(message).ensureSuccess()
 
         // then
-        WaitAssert.wait(timeout = Duration.of(2, ChronoUnit.SECONDS)) {
+        WaitAssert.wait {
             val order1 = esOrderRepository.findById(order.id.toString())
             assertThat(order1?.orderId).isEqualTo(order.id.fullId())
         }

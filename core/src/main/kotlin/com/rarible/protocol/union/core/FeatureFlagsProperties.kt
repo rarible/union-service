@@ -1,5 +1,6 @@
 package com.rarible.protocol.union.core
 
+import org.elasticsearch.action.support.WriteRequest
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.ConstructorBinding
 
@@ -21,6 +22,7 @@ data class FeatureFlagsProperties(
     // orders
     var enableOrderQueriesToElasticSearch: Boolean = false,
     var enableOrderSaveImmediateToElasticSearch: Boolean = false,
+    var orderRefreshPolicy: WriteRequest.RefreshPolicy = WriteRequest.RefreshPolicy.NONE,
     // collections
     val enableCollectionQueriesToElastic: Boolean = false,
     var enableCollectionSaveImmediateToElasticSearch: Boolean = false,

@@ -25,13 +25,13 @@ data class EsOrder(
     val type: Type,
     val blockchain: BlockchainDto,
     val platform: PlatformDto,
-    val maker: UnionAddress,
+    val maker: String,
     val make: Asset,
-    val taker: UnionAddress?,
+    val taker: String?,
     val take: Asset,
     val start: Instant?,
     val end: Instant?,
-    val origins: List<UnionAddress>,
+    val origins: List<String>, //list of address fulIds
     val status: OrderStatusDto,
 ) {
 

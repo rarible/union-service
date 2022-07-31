@@ -90,7 +90,17 @@ abstract class ElasticSearchRepository<T>(
             }
         }
 
-        elasticClient.bulk(bulkRequest).awaitFirst()
+        val result = elasticClient.bulk(bulkRequest).awaitFirst()
+
+        if(result.hasFailures()) {
+            logger.error(
+                "Failed to saveAll [{}] entities to index [{}] with policy {}: {}",
+                entities.size,
+                indexName,
+                refreshPolicy,
+                result.buildFailureMessage()
+            )
+        }
         return entities
     }
 

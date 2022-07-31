@@ -3,7 +3,7 @@
     "number_of_shards": 6,
     "number_of_replicas": 1,
     "refresh_interval": "1s",
-    "sort.field": [ "date", "ownershipId" ],
+    "sort.field": [ "date", "orderId" ],
     "sort.order": [ "desc", "desc" ]
   },
   "analysis": {
