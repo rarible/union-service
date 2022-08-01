@@ -179,7 +179,7 @@ class OrderElasticService(
         return fetchOrders(orderFilter)
     }
 
-    private suspend fun fetchOrders(orderFilter: EsOrderFilter): OrdersDto {
+    suspend fun fetchOrders(orderFilter: EsOrderFilter): OrdersDto {
         val esOrders = esOrderRepository.findByFilter(orderFilter)
         val orderIdsByBlockchain = esOrders.groupBy(EsOrder::blockchain, EsOrder::orderId)
 
