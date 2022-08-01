@@ -1,8 +1,6 @@
 package com.rarible.protocol.union.api.service.elastic
 
 import com.rarible.core.common.flatMapAsync
-import com.rarible.core.logging.Logger
-
 import com.rarible.protocol.union.core.model.EsAllOrderFilter
 import com.rarible.protocol.union.core.model.EsOrder
 import com.rarible.protocol.union.core.model.EsOrderBidOrdersByItem
@@ -13,7 +11,6 @@ import com.rarible.protocol.union.core.model.EsOrdersByMakers
 import com.rarible.protocol.union.core.service.OrderService
 import com.rarible.protocol.union.core.service.router.BlockchainRouter
 import com.rarible.protocol.union.dto.BlockchainDto
-import com.rarible.protocol.union.dto.OrderDto
 import com.rarible.protocol.union.dto.OrderSortDto
 import com.rarible.protocol.union.dto.OrderStatusDto
 import com.rarible.protocol.union.dto.OrdersDto
