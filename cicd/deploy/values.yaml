@@ -72,7 +72,7 @@ protocol-union-indexer:
     node.labels.rarible.service: true
   resources:
     jvm:
-      xmx_megabytes: 256
+      xmx_megabytes: 384
       max_direct_memory_megabytes: 64
   podAnnotations:
     fluentbit.io/parser: logfmt
