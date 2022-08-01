@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalStdlibApi::class)
+@file:OptIn(ExperimentalStdlibApi::class, ExperimentalStdlibApi::class)
 
 package com.rarible.protocol.union.core.model
 
@@ -72,21 +72,6 @@ data class EsAllOrderFilter(
     }
 }
 
-data class EsOrderByIdFilter(
-    val orderId: String,
-) : EsOrderFilter {
-    override fun asQuery(): Query =
-        NativeSearchQueryBuilder().withQuery(QueryBuilders.idsQuery().addIds(orderId)).build()
-}
-
-data class EsOrderByIdsFilter(
-    val orderIds: Collection<String>,
-) : EsOrderFilter {
-    override fun asQuery(): Query =
-        NativeSearchQueryBuilder().withQuery(QueryBuilders.idsQuery().addIds(*orderIds.toTypedArray())).build()
-}
-
-
 data class EsOrderSellOrdersByItem(
     val itemId: String,
     val platform: PlatformDto?,
@@ -99,14 +84,15 @@ data class EsOrderSellOrdersByItem(
 ): EsOrderFilter {
     override fun asQuery(): Query {
         val list = buildList {
-            QueryBuilders.termsQuery(
-                "make.address",
+            add(QueryBuilders.termsQuery(
+                "${EsOrder::make.name}.${EsOrder.Asset::address.name}",
                 itemId
-            )
-            QueryBuilders.termsQuery(
+            ))
+
+            add(QueryBuilders.termsQuery(
                 EsOrder::type.name,
                 EsOrder.Type.SELL.name
-            )
+            ))
 
             if(platform != null) {
                 add(QueryBuilders.termsQuery(EsOrder::platform.name, platform.name))
@@ -142,14 +128,14 @@ data class EsOrderBidOrdersByItem(
 ): EsOrderFilter {
     override fun asQuery(): Query {
         val list = buildList {
-            QueryBuilders.termsQuery(
-                "make.address",
+            add(QueryBuilders.termsQuery(
+                "${EsOrder::take.name}.${EsOrder.Asset::address.name}",
                 itemId
-            )
-            QueryBuilders.termsQuery(
+            ))
+            add(QueryBuilders.termsQuery(
                 EsOrder::type.name,
                 EsOrder.Type.SELL.name
-            )
+            ))
 
             if(platform != null) {
                 add(QueryBuilders.termsQuery(EsOrder::platform.name, platform.name))
@@ -186,10 +172,10 @@ data class EsOrdersByMakers(
 ) : EsOrderFilter {
     override fun asQuery(): Query {
         val list = buildList {
-            QueryBuilders.termsQuery(
+            add(QueryBuilders.termsQuery(
                 EsOrder::type.name,
                 type.name
-            )
+            ))
 
             if(platform != null) {
                 add(QueryBuilders.termsQuery(EsOrder::platform.name, platform.name))
@@ -224,10 +210,10 @@ data class EsOrderSellOrders(
 ) : EsOrderFilter {
     override fun asQuery(): Query {
         val list = buildList {
-            QueryBuilders.termsQuery(
+            add(QueryBuilders.termsQuery(
                 EsOrder::type.name,
                 EsOrder.Type.SELL.name
-            )
+            ))
 
             if (blockchains != null) {
                 add(QueryBuilders.termsQuery(EsOrder::blockchain.name, blockchains.map { it.name }))

@@ -9,6 +9,7 @@ import com.rarible.protocol.union.core.elasticsearch.EsRepository
 import com.rarible.protocol.union.core.model.elasticsearch.EntityDefinitionExtended
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
+import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.runBlocking
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest
 import org.elasticsearch.action.bulk.BulkRequest
@@ -21,6 +22,7 @@ import org.springframework.data.elasticsearch.core.convert.ElasticsearchConverte
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates
 import org.springframework.data.elasticsearch.core.query.Criteria
 import org.springframework.data.elasticsearch.core.query.CriteriaQuery
+import org.springframework.data.elasticsearch.core.query.Query
 import java.io.IOException
 import javax.annotation.PostConstruct
 
@@ -109,6 +111,11 @@ abstract class ElasticSearchRepository<T>(
         return esOperations.delete(
             query, entityType, entityDefinition.writeIndexCoordinates
         ).awaitFirstOrNull()?.deleted
+    }
+
+    //for tests
+    suspend fun deleteAll() {
+        esOperations.delete(Query.findAll(), entityType).awaitSingle()
     }
 
     override suspend fun refresh() {
