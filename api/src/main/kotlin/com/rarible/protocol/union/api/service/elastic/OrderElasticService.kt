@@ -2,6 +2,7 @@ package com.rarible.protocol.union.api.service.elastic
 
 import com.rarible.core.common.flatMapAsync
 import com.rarible.core.logging.Logger
+
 import com.rarible.protocol.union.core.model.EsAllOrderFilter
 import com.rarible.protocol.union.core.model.EsOrder
 import com.rarible.protocol.union.core.model.EsOrderBidOrdersByItem
@@ -20,6 +21,7 @@ import com.rarible.protocol.union.dto.PlatformDto
 import com.rarible.protocol.union.dto.SyncSortDto
 import com.rarible.protocol.union.dto.continuation.DateIdContinuation
 import com.rarible.protocol.union.dto.continuation.page.PageSize
+import com.rarible.protocol.union.dto.parser.IdParser
 import com.rarible.protocol.union.enrichment.repository.search.EsOrderRepository
 import com.rarible.protocol.union.enrichment.service.query.order.OrderQueryService
 import org.springframework.stereotype.Service
@@ -184,16 +186,22 @@ class OrderElasticService(
         val esOrders = esOrderRepository.findByFilter(orderFilter)
         val orderIdsByBlockchain = esOrders.groupBy(EsOrder::blockchain, EsOrder::orderId)
 
-        val slices: List<OrderDto> = orderIdsByBlockchain.flatMapAsync { (blockchain, ids) ->
-            router.getService(blockchain).getOrdersByIds(ids)
-        }
+        val slices = orderIdsByBlockchain.flatMapAsync { (blockchain, ids) ->
+            val isBlockchainEnabled = router.isBlockchainEnabled(blockchain)
+            if(isBlockchainEnabled) {
+                val rawIds = ids.map { IdParser.parseOrderId(it).value }
+                router.getService(blockchain).getOrdersByIds(rawIds)
+            } else emptyList()
+        }.associateBy { it.id.fullId() }
+
+        val sortedOrders = esOrders.map { slices[it.orderId]!! }
 
         return if(esOrders.isEmpty()) {
             OrdersDto(orders = emptyList(), continuation = null)
         } else {
             val last = esOrders.last()
             OrdersDto(
-                orders = slices,
+                orders = sortedOrders,
                 continuation = DateIdContinuation(
                     id = last.orderId,
                     date = last.lastUpdatedAt
