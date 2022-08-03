@@ -2,6 +2,8 @@ package com.rarible.protocol.union.search.reindexer.task
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import com.rarible.core.task.Task
+import com.rarible.core.task.TaskRepository
 import com.rarible.protocol.union.core.elasticsearch.IndexService
 import com.rarible.protocol.union.core.model.EsOwnership
 import com.rarible.protocol.union.core.model.elasticsearch.EntityDefinitionExtended
@@ -9,16 +11,17 @@ import com.rarible.protocol.union.dto.BlockchainDto
 import com.rarible.protocol.union.enrichment.repository.search.EsOwnershipRepository
 import com.rarible.protocol.union.worker.config.BlockchainReindexProperties
 import com.rarible.protocol.union.worker.config.OwnershipReindexProperties
+import com.rarible.protocol.union.worker.task.search.OwnershipTaskParam
 import com.rarible.protocol.union.worker.task.search.ParamFactory
 import com.rarible.protocol.union.worker.task.search.ownership.OwnershipReindexService
 import com.rarible.protocol.union.worker.task.search.ownership.OwnershipTask
-import com.rarible.protocol.union.worker.task.search.ownership.OwnershipTaskParam
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.reactor.mono
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
@@ -32,6 +35,12 @@ class OwnershipTaskUnitTest {
         } returns flowOf("next_cursor")
     }
 
+    private val taskRepository = mockk<TaskRepository> {
+        coEvery {
+            findByTypeAndParam(any(), any())
+        } returns mono { Task(type = "", param = "", running = true) }
+    }
+
     private val repository = mockk<EsOwnershipRepository> {
         every {
             entityDefinition
@@ -43,7 +52,8 @@ class OwnershipTaskUnitTest {
             aliasName = "ownership",
             writeAliasName = "ownership",
             settings = EsOwnership.ENTITY_DEFINITION.settings,
-            reindexTask = EsOwnership.ENTITY_DEFINITION.reindexTask
+            reindexTask = EsOwnership.ENTITY_DEFINITION.reindexTask,
+            settingsHash = "",
         )
 
         coEvery { refresh() } returns Unit
@@ -66,6 +76,7 @@ class OwnershipTaskUnitTest {
             reindexService,
             repository,
             indexService,
+            taskRepository,
         )
 
         task.runLongTask(
@@ -92,6 +103,7 @@ class OwnershipTaskUnitTest {
             reindexService,
             repository,
             indexService,
+            taskRepository,
         )
 
         task.runLongTask(

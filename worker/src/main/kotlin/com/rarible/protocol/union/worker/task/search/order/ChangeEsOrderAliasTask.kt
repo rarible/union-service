@@ -14,15 +14,9 @@ class ChangeEsOrderAliasTask(
     indexService: IndexService,
     paramFactory: ParamFactory
 ) : ChangeEsAliasTask(
-    TYPE,
     esOrderRepository.entityDefinition,
     taskRepository,
     esOrderRepository,
     indexService,
     paramFactory
-) {
-
-    companion object {
-        const val TYPE = "CHANGE_ES_ORDER_ALIAS_TASK"
-    }
-}
+)

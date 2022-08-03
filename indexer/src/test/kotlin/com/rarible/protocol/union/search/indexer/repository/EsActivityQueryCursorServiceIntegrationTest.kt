@@ -37,7 +37,7 @@ internal class EsActivityQueryCursorServiceIntegrationTest {
     private lateinit var elasticsearchTestBootstrapper: ElasticsearchTestBootstrapper
 
     @BeforeEach
-    fun setUp() = runBlocking {
+    fun setUp() = runBlocking<Unit> {
         elasticsearchTestBootstrapper.bootstrap()
     }
 

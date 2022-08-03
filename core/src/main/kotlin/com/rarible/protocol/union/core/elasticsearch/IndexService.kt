@@ -53,22 +53,18 @@ class IndexService(
     suspend fun getEntityMetadata(
         definition: EntityDefinitionExtended,
         realIndexName: String
-    ): CurrentEntityDefinition? {
+    ): CurrentEntityDefinition {
         val id = EsEntityMetadataType.MAPPING.getId(definition)
-        var response = esMetadataRepository.findById(id)
+        var response: EsMetadata = esMetadataRepository.findById(id)
+            ?: throw RuntimeException("Index ${definition.entity} exists with name $realIndexName but metadata does not. Update metadata")
 
-        if (response == null) {
-            logger.info("Index ${definition.entity} exists with name $realIndexName but metadata does not. Update metadata")
-            innerUpdateMetadata(definition)
-            return null
-        }
         val mapping = response.content
 
-        response = esMetadataRepository.findById(EsEntityMetadataType.SETTINGS.getId(definition))
-        val settings: String = response?.content ?: "{}"
+        response = esMetadataRepository.findById(EsEntityMetadataType.SETTINGS.getId(definition))!!
+        val settings: String = response.content
 
-        response = esMetadataRepository.findById(EsEntityMetadataType.VERSION_DATA.getId(definition))
-        val version: Int = response?.content?.toInt() ?: 1
+        response = esMetadataRepository.findById(EsEntityMetadataType.VERSION_DATA.getId(definition))!!
+        val version: Int = response.content.toInt()
 
         return CurrentEntityDefinition(
             mapping = mapping,
@@ -79,10 +75,10 @@ class IndexService(
 
     suspend fun finishIndexing(newIndexName: String, definition: EntityDefinitionExtended) {
         val alias = definition.aliasName
-        val realIndexName = getRealName(reactiveElasticSearchOperations, alias)
+        val realIndexName = getRealName(reactiveElasticSearchOperations, alias, definition)
             ?: throw IllegalStateException("Index not found")
         if (realIndexName != newIndexName) {
-            moveAlias(reactiveElasticSearchOperations, alias, realIndexName, newIndexName)
+            moveAlias(reactiveElasticSearchOperations, alias, realIndexName, newIndexName, definition)
         }
         updateMetadata(definition)
     }

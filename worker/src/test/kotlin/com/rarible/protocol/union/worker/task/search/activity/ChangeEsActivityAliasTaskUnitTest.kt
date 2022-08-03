@@ -8,10 +8,10 @@ import com.rarible.core.task.TaskStatus
 import com.rarible.protocol.union.core.elasticsearch.EsNameResolver
 import com.rarible.protocol.union.core.elasticsearch.IndexService
 import com.rarible.protocol.union.core.model.EsActivity
-import com.rarible.protocol.union.core.model.elasticsearch.EntityDefinitionExtended
 import com.rarible.protocol.union.dto.ActivityTypeDto
 import com.rarible.protocol.union.dto.BlockchainDto
 import com.rarible.protocol.union.enrichment.repository.search.EsActivityRepository
+import com.rarible.protocol.union.worker.task.search.ActivityTaskParam
 import com.rarible.protocol.union.worker.task.search.ChangeAliasTaskParam
 import com.rarible.protocol.union.worker.task.search.ParamFactory
 import io.mockk.coEvery
@@ -28,7 +28,7 @@ internal class ChangeEsActivityAliasTaskUnitTest {
 
     private val paramFactory = ParamFactory(jacksonObjectMapper())
     private val esNameResolver = EsNameResolver(ApplicationEnvironmentInfo("test", "test@host.com"))
-    private  val entityDefinitionExtended = esNameResolver.createEntityDefinitionExtended(EsActivity.ENTITY_DEFINITION)
+    private val entityDefinitionExtended = esNameResolver.createEntityDefinitionExtended(EsActivity.ENTITY_DEFINITION)
     private val completedTask = mockk<Task> {
         every { lastStatus } returns TaskStatus.COMPLETED
     }
@@ -36,8 +36,14 @@ internal class ChangeEsActivityAliasTaskUnitTest {
     private val failedTask = mockk<Task> {
         every { lastStatus } returns TaskStatus.ERROR
     }
-    private val reindexEthereumList = ActivityTaskParam(BlockchainDto.ETHEREUM, ActivityTypeDto.LIST, "test_activity")
-    private val reindexFlowBid = ActivityTaskParam(BlockchainDto.FLOW, ActivityTypeDto.BID, "test_activity")
+    private val reindexEthereumList = ActivityTaskParam(
+        versionData = 1, settingsHash = "",
+        BlockchainDto.ETHEREUM, ActivityTypeDto.LIST, "test_activity"
+    )
+    private val reindexFlowBid = ActivityTaskParam(
+        versionData = 1, settingsHash = "",
+        BlockchainDto.FLOW, ActivityTypeDto.BID, "test_activity"
+    )
 
     private val switchAlias = ChangeAliasTaskParam(
         "test_activity",

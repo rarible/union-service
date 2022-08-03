@@ -6,6 +6,7 @@ import com.rarible.core.task.Task
 import com.rarible.core.task.TaskRepository
 import com.rarible.core.task.TaskStatus
 import com.rarible.protocol.union.core.elasticsearch.ReindexSchedulingService
+import com.rarible.protocol.union.core.elasticsearch.bootstrap.ElasticsearchBootstrapper
 import com.rarible.protocol.union.core.model.EsActivity
 import com.rarible.protocol.union.core.model.EsCollection
 import com.rarible.protocol.union.core.model.EsItem
@@ -14,24 +15,17 @@ import com.rarible.protocol.union.core.model.EsOwnership
 import com.rarible.protocol.union.core.model.elasticsearch.EntityDefinitionExtended
 import com.rarible.protocol.union.core.model.elasticsearch.EsEntity
 import com.rarible.protocol.union.dto.ActivityTypeDto
-import com.rarible.protocol.union.dto.BlockchainDto
 import com.rarible.protocol.union.worker.config.WorkerProperties
-import com.rarible.protocol.union.worker.task.search.activity.ActivityTaskParam
-import com.rarible.protocol.union.worker.task.search.activity.ChangeEsActivityAliasTask
-import com.rarible.protocol.union.worker.task.search.collection.ChangeEsCollectionAliasTask
-import com.rarible.protocol.union.worker.task.search.collection.CollectionTaskParam
-import com.rarible.protocol.union.worker.task.search.item.ChangeEsItemAliasTask
-import com.rarible.protocol.union.worker.task.search.item.ItemTaskParam
-import com.rarible.protocol.union.worker.task.search.order.ChangeEsOrderAliasTask
-import com.rarible.protocol.union.worker.task.search.order.OrderTaskParam
-import com.rarible.protocol.union.worker.task.search.ownership.ChangeEsOwnershipAliasTask
-import com.rarible.protocol.union.worker.task.search.ownership.OwnershipTaskParam
+import com.rarible.protocol.union.worker.task.search.ChangeEsAliasTask.Companion.getChangeAliasTaskName
 import kotlinx.coroutines.reactive.awaitFirst
+import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.stereotype.Component
 
 @Component
 class ReindexService(
+    // don't remove this unused dep. It used to check create bean on not test env
+    private val elasticsearchBootstrapper: ElasticsearchBootstrapper,
     workerProperties: WorkerProperties,
     private val taskRepository: TaskRepository,
     private val paramFactory: ParamFactory,
@@ -45,27 +39,34 @@ class ReindexService(
     ) {
         when (entityDefinition.entity) {
             EsEntity.ACTIVITY -> {
-                scheduleActivityReindex(newIndexName)
+                scheduleActivityReindex(newIndexName, entityDefinition)
             }
             EsEntity.ITEM -> {
-                scheduleItemReindex(newIndexName)
+                scheduleItemReindex(newIndexName, entityDefinition)
             }
             EsEntity.COLLECTION -> {
-                scheduleCollectionReindex(newIndexName)
+                scheduleCollectionReindex(newIndexName, entityDefinition)
             }
             EsEntity.ORDER -> {
-                scheduleOrderReindex(newIndexName)
+                scheduleOrderReindex(newIndexName, entityDefinition)
             }
             EsEntity.OWNERSHIP -> {
-                scheduleOwnershipReindex(newIndexName)
+                scheduleOwnershipReindex(newIndexName, entityDefinition)
             }
         }
     }
 
-    suspend fun scheduleCollectionReindex(indexName: String) {
+    private suspend fun scheduleCollectionReindex(indexName: String, definition: EntityDefinitionExtended) {
         val blockchains = searchReindexProperties.collection.activeBlockchains()
         val taskParams = blockchains.map {
-            paramFactory.toString(CollectionTaskParam(it, indexName))
+            paramFactory.toString(
+                CollectionTaskParam(
+                    versionData = definition.versionData,
+                    settingsHash = definition.settingsHash,
+                    blockchain = it,
+                    index = indexName
+                )
+            )
         }
         val tasks = tasks(EsCollection.ENTITY_DEFINITION.reindexTask, taskParams)
 
@@ -76,18 +77,26 @@ class ReindexService(
         val indexSwitch = indexSwitchTask(
             entityName = EsEntity.COLLECTION.entityName,
             changeAliasTaskParam = changeAliasTaskParam,
-            taskType = ChangeEsCollectionAliasTask.TYPE
+            definition
         )
 
         taskRepository.saveAll(tasks + indexSwitch).collectList().awaitFirst()
     }
 
-    suspend fun scheduleActivityReindex(indexName: String) {
+    private suspend fun scheduleActivityReindex(indexName: String, definition: EntityDefinitionExtended) {
         val blockchains = searchReindexProperties.activity.activeBlockchains()
         val types = ActivityTypeDto.values()
         val taskParams = blockchains.flatMap { blockchain ->
             types.map { type ->
-                paramFactory.toString(ActivityTaskParam(blockchain, type, indexName))
+                paramFactory.toString(
+                    ActivityTaskParam(
+                        versionData = definition.versionData,
+                        settingsHash = definition.settingsHash,
+                        blockchain = blockchain,
+                        type = type,
+                        index = indexName
+                    )
+                )
             }
         }
 
@@ -100,15 +109,22 @@ class ReindexService(
         val indexSwitch = indexSwitchTask(
             entityName = EsEntity.ACTIVITY.entityName,
             changeAliasTaskParam = changeAliasTaskParam,
-            taskType = ChangeEsActivityAliasTask.TYPE
+            definition
         )
         taskRepository.saveAll(tasks + indexSwitch).collectList().awaitFirst()
     }
 
-    suspend fun scheduleItemReindex(indexName: String) {
+    private suspend fun scheduleItemReindex(indexName: String, definition: EntityDefinitionExtended) {
         val blockchains = searchReindexProperties.item.activeBlockchains()
         val taskParams = blockchains.map {
-            paramFactory.toString(ItemTaskParam(blockchain = it, index = indexName))
+            paramFactory.toString(
+                ItemTaskParam(
+                    versionData = definition.versionData,
+                    settingsHash = definition.settingsHash,
+                    blockchain = it,
+                    index = indexName
+                )
+            )
         }
         val tasks = tasks(EsItem.ENTITY_DEFINITION.reindexTask, taskParams)
         val changeEsItemAliasTaskParam = ChangeAliasTaskParam(
@@ -117,15 +133,22 @@ class ReindexService(
         val indexSwitch = indexSwitchTask(
             entityName = EsEntity.ITEM.entityName,
             changeAliasTaskParam = changeEsItemAliasTaskParam,
-            taskType = ChangeEsItemAliasTask.TYPE
+            definition
         )
         taskRepository.saveAll(tasks + indexSwitch).collectList().awaitFirst()
     }
 
-    suspend fun scheduleOrderReindex(indexName: String) {
+    private suspend fun scheduleOrderReindex(indexName: String, definition: EntityDefinitionExtended) {
         val blockchains = searchReindexProperties.order.activeBlockchains()
         val taskParams = blockchains.map {
-            paramFactory.toString(OrderTaskParam(blockchain = it, index = indexName))
+            paramFactory.toString(
+                OrderTaskParam(
+                    versionData = definition.versionData,
+                    settingsHash = definition.settingsHash,
+                    blockchain = it,
+                    index = indexName
+                )
+            )
         }
         val tasks = tasks(EsOrder.ENTITY_DEFINITION.reindexTask, taskParams)
         val changeEsOrderAliasTaskParam = ChangeAliasTaskParam(
@@ -134,16 +157,24 @@ class ReindexService(
         val indexSwitch = indexSwitchTask(
             entityName = EsEntity.ORDER.entityName,
             changeAliasTaskParam = changeEsOrderAliasTaskParam,
-            taskType = ChangeEsOrderAliasTask.TYPE
+            definition
         )
         taskRepository.saveAll(tasks + indexSwitch).collectList().awaitFirst()
     }
 
-    suspend fun scheduleOwnershipReindex(indexName: String) {
+    private suspend fun scheduleOwnershipReindex(indexName: String, definition: EntityDefinitionExtended) {
         val blockchains = searchReindexProperties.ownership.activeBlockchains()
         val taskParams = blockchains.flatMap { blockchain ->
             OwnershipTaskParam.Target.values().map { target ->
-                paramFactory.toString(OwnershipTaskParam(blockchain = blockchain, index = indexName, target = target))
+                paramFactory.toString(
+                    OwnershipTaskParam(
+                        versionData = definition.versionData,
+                        settingsHash = definition.settingsHash,
+                        blockchain = blockchain,
+                        index = indexName,
+                        target = target
+                    )
+                )
             }
         }
         val tasks = tasks(EsOwnership.ENTITY_DEFINITION.reindexTask, taskParams)
@@ -153,7 +184,7 @@ class ReindexService(
         val indexSwitch = indexSwitchTask(
             entityName = EsEntity.OWNERSHIP.entityName,
             changeAliasTaskParam = changeEsOwnershipAliasTaskParam,
-            taskType = ChangeEsOwnershipAliasTask.TYPE
+            definition
         )
         taskRepository.saveAll(tasks + indexSwitch).collectList().awaitFirst()
     }
@@ -192,14 +223,14 @@ class ReindexService(
         }
     }
 
-    private suspend fun <T> indexSwitchTask(
+    private suspend fun indexSwitchTask(
         entityName: String,
-        changeAliasTaskParam: T,
-        taskType: String
+        changeAliasTaskParam: ChangeAliasTaskParam,
+        definition: EntityDefinitionExtended
     ): List<Task> {
 
         val taskParamJson = paramFactory.toString(changeAliasTaskParam)
-
+        val taskType = definition.getChangeAliasTaskName()
         val existing = taskRepository
             .findByTypeAndParam(taskType, taskParamJson)
             .awaitSingleOrNull()
@@ -225,6 +256,32 @@ class ReindexService(
             )
             emptyList()
         }
+    }
+
+    override suspend fun stopTasksIfExists(entityDefinition: EntityDefinitionExtended) {
+        val tasks = taskRepository.findAll()
+            .filter { entityDefinition.reindexTask == it.type || entityDefinition.getChangeAliasTaskName() == it.type }
+            .collectList()
+            .awaitFirst()
+
+        taskRepository.deleteAll(tasks).awaitFirstOrNull()
+    }
+
+    override suspend fun checkReindexInProgress(
+        entityDefinition: EntityDefinitionExtended
+    ): Boolean {
+        val tasks = taskRepository.findAll()
+            .filter {
+                if (entityDefinition.reindexTask == it.type) {
+                    val taskParam = paramFactory.parse<RawTaskParam>(it.param)
+                    entityDefinition.versionData == taskParam.versionData &&
+                        entityDefinition.settingsHash == taskParam.settingsHash
+                } else false
+            }
+            .collectList()
+            .awaitFirst()
+
+        return tasks.isNotEmpty()
     }
 
     companion object {

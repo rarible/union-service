@@ -42,8 +42,6 @@ import com.rarible.protocol.union.integration.solana.data.randomSolanaMintActivi
 import com.rarible.protocol.union.integration.tezos.data.randomTezosItemBurnActivity
 import com.rarible.protocol.union.integration.tezos.service.TezosPgActivityService
 import io.mockk.coEvery
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.runBlocking
@@ -53,6 +51,8 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.TestPropertySource
 import reactor.kotlin.core.publisher.toMono
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import com.rarible.protocol.solana.dto.ActivitiesByIdRequestDto as SolanaActivitiesByIdRequestDto
 
 @FlowPreview
@@ -80,7 +80,7 @@ class ActivityControllerElasticFt : AbstractIntegrationTest() {
     private lateinit var tezosPgActivityService: TezosPgActivityService
 
     @BeforeEach
-    fun setUp() = runBlocking {
+    fun setUp() = runBlocking<Unit> {
         elasticsearchTestBootstrapper.bootstrap()
     }
 

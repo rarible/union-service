@@ -62,6 +62,7 @@ internal class EsActivityQueryServiceIntegrationTest {
             date = Instant.ofEpochMilli(1000),
         )
         repository.saveAll(listOf(toSkip1, toFind3, toSkip2, toFind2, toFind1))
+        repository.refresh()
 
         // when
         val actual = repository.search(filter, EsActivitySort(true), 3)

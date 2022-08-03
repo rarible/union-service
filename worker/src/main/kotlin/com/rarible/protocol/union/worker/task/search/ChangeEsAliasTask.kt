@@ -5,15 +5,14 @@ import com.rarible.core.logging.Logger
 import com.rarible.core.task.TaskHandler
 import com.rarible.core.task.TaskRepository
 import com.rarible.core.task.TaskStatus
+import com.rarible.protocol.union.core.elasticsearch.EsRepository
 import com.rarible.protocol.union.core.elasticsearch.IndexService
 import com.rarible.protocol.union.core.model.elasticsearch.EntityDefinitionExtended
-import com.rarible.protocol.union.core.elasticsearch.EsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 
 open class ChangeEsAliasTask(
-    override val type: String,
     private val entityDefinition: EntityDefinitionExtended,
     private val taskRepository: TaskRepository,
     private val esRepository: EsRepository,
@@ -21,6 +20,7 @@ open class ChangeEsAliasTask(
     private val paramFactory: ParamFactory
 ) : TaskHandler<Unit> {
 
+    override val type: String = entityDefinition.getChangeAliasTaskName()
     override suspend fun isAbleToRun(param: String): Boolean {
         val parameter = paramFactory.parse<ChangeAliasTaskParam>(param)
         val tasks = parameter.tasks.mapAsync { taskParam ->
@@ -49,5 +49,6 @@ open class ChangeEsAliasTask(
 
     companion object {
         private val logger by Logger()
+        fun EntityDefinitionExtended.getChangeAliasTaskName() = "CHANGE_ES_${entity.name}_ALIAS_TASK"
     }
 }

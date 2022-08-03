@@ -37,6 +37,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import org.springframework.core.io.buffer.DefaultDataBufferFactory
+import org.springframework.data.elasticsearch.client.reactive.ReactiveElasticsearchClient
 import org.springframework.data.elasticsearch.core.ReactiveElasticsearchOperations
 import org.springframework.web.reactive.socket.WebSocketMessage
 import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient
@@ -68,6 +69,7 @@ class MockContext : ApplicationListener<WebServerInitializedEvent> {
     @ConditionalOnMissingBean
     fun elasticsearchBootstrap(
         reactiveElasticSearchOperations: ReactiveElasticsearchOperations,
+        restHighLevelClient: ReactiveElasticsearchClient,
         esNameResolver: EsNameResolver,
         indexService: IndexService,
         repositories: List<EsRepository>,
@@ -76,6 +78,7 @@ class MockContext : ApplicationListener<WebServerInitializedEvent> {
         return ElasticsearchTestBootstrapper(
             esNameResolver = esNameResolver,
             esOperations = reactiveElasticSearchOperations,
+            restHighLevelClient,
             entityDefinitions = EsEntitiesConfig.createEsEntities(),
             repositories = repositories
         )

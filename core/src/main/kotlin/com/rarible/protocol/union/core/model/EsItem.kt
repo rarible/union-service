@@ -31,7 +31,7 @@ data class EsItem(
     val self: Boolean? = false
 ) {
     companion object {
-        private const val VERSION: Int = 1
+        const val VERSION: Int = 1
 
         val ENTITY_DEFINITION = EsEntity.ITEM.let {
             EntityDefinition(

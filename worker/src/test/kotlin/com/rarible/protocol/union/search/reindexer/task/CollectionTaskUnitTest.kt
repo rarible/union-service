@@ -1,7 +1,8 @@
 package com.rarible.protocol.union.search.reindexer.task
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import com.rarible.core.task.Task
+import com.rarible.core.task.TaskRepository
 import com.rarible.protocol.union.dto.BlockchainDto
 import com.rarible.protocol.union.worker.config.BlockchainReindexProperties
 import com.rarible.protocol.union.worker.config.CollectionReindexProperties
@@ -13,6 +14,7 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.reactor.mono
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 
@@ -27,9 +29,15 @@ class CollectionTaskUnitTest {
         } returns flowOf("next_cursor")
     }
 
+    private val taskRepository = mockk<TaskRepository> {
+        coEvery {
+            findByTypeAndParam(any(), any())
+        } returns mono { Task(type = "", param = "", running = true) }
+    }
+
     @Test
     fun `should launch first run of the task`(): Unit {
-        runBlocking {
+        runBlocking<Unit> {
             val task = CollectionTask(
                 CollectionReindexProperties(
                     enabled = true,
@@ -37,6 +45,7 @@ class CollectionTaskUnitTest {
                 ),
                 paramFactory,
                 service,
+                taskRepository
             )
 
             task.runLongTask(
@@ -58,7 +67,8 @@ class CollectionTaskUnitTest {
                 blockchains = listOf(BlockchainReindexProperties(enabled = true, BlockchainDto.ETHEREUM))
             ),
             paramFactory,
-            service
+            service,
+            taskRepository
         )
 
         task.runLongTask(

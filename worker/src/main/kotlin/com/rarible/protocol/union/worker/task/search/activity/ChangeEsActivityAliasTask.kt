@@ -14,14 +14,9 @@ class ChangeEsActivityAliasTask(
     indexService: IndexService,
     paramFactory: ParamFactory
 ) : ChangeEsAliasTask(
-    TYPE,
     esActivityRepository.entityDefinition,
     taskRepository,
     esActivityRepository,
     indexService,
     paramFactory
-) {
-    companion object {
-        const val TYPE = "CHANGE_ES_ACTIVITY_ALIAS_TASK"
-    }
-}
+)

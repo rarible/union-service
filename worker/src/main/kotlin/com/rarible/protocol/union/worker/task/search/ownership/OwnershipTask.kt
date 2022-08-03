@@ -2,14 +2,18 @@ package com.rarible.protocol.union.worker.task.search.ownership
 
 import com.rarible.core.logging.Logger
 import com.rarible.core.task.TaskHandler
+import com.rarible.core.task.TaskRepository
 import com.rarible.protocol.union.core.elasticsearch.IndexService
 import com.rarible.protocol.union.core.model.EsOwnership
 import com.rarible.protocol.union.enrichment.repository.search.EsOwnershipRepository
 import com.rarible.protocol.union.worker.config.OwnershipReindexProperties
+import com.rarible.protocol.union.worker.task.search.OwnershipTaskParam
 import com.rarible.protocol.union.worker.task.search.ParamFactory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.takeWhile
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.stereotype.Component
 
 @Component
@@ -19,6 +23,7 @@ class OwnershipTask(
     private val reindexService: OwnershipReindexService,
     private val repository: EsOwnershipRepository,
     private val indexService: IndexService,
+    private val taskRepository: TaskRepository,
 ) : TaskHandler<String> {
     private val entityDefinition = repository.entityDefinition
 
@@ -39,11 +44,13 @@ class OwnershipTask(
                 target = taskParam.target,
                 index = taskParam.index,
                 cursor = from,
-            ).onCompletion {
-                indexService.finishIndexing(taskParam.index, entityDefinition)
-                repository.refresh()
-                logger.info("Finished reindex of ${entityDefinition.entity} with param $param")
-            }
+            )
+                .takeWhile { taskRepository.findByTypeAndParam(type, param).awaitSingleOrNull()?.running ?: false }
+                .onCompletion {
+                    indexService.finishIndexing(taskParam.index, entityDefinition)
+                    repository.refresh()
+                    logger.info("Finished reindex of ${entityDefinition.entity} with param $param")
+                }
         }
     }
 
