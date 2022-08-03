@@ -31,8 +31,11 @@ class EsItemRepository(
     elasticClient,
     EsItem::class.java,
     EsItem::itemId.name,
-    EsItem::itemId
 ) {
+
+    override fun entityId(entity: EsItem): String {
+        return entity.itemId
+    }
 
     suspend fun search(filter: EsItemFilter, sort: EsItemSort, limit: Int?): List<EsItem> {
         val query = queryBuilderService.build(filter, sort)

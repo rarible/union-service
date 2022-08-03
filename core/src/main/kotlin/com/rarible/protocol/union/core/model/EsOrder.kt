@@ -12,6 +12,7 @@ import com.rarible.protocol.union.dto.UnionAddress
 import org.springframework.data.annotation.Id
 import org.springframework.data.elasticsearch.annotations.Field
 import org.springframework.data.elasticsearch.annotations.FieldType
+import java.math.BigDecimal
 import java.time.Instant
 
 data class EsOrder(
@@ -24,18 +25,20 @@ data class EsOrder(
     val type: Type,
     val blockchain: BlockchainDto,
     val platform: PlatformDto,
-    val maker: UnionAddress,
+    val maker: String,
     val make: Asset,
-    val taker: UnionAddress?,
+    val taker: String?,
     val take: Asset,
     val start: Instant?,
     val end: Instant?,
-    val origins: List<UnionAddress>,
-    val status: OrderStatusDto
+    val origins: List<String>, //list of address fulIds
+    val status: OrderStatusDto,
 ) {
 
     data class Asset(
-        val type: AssetTypeDto
+        val address: String,
+        val isNft: Boolean,
+        val value: BigDecimal
     )
 
     enum class Type {

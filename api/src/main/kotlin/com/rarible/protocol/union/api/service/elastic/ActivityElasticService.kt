@@ -2,10 +2,11 @@ package com.rarible.protocol.union.api.service.elastic
 
 import com.rarible.core.apm.CaptureSpan
 import com.rarible.core.apm.SpanType
-import com.rarible.core.common.mapAsync
+import com.rarible.core.common.flatMapAsync
 import com.rarible.core.logging.Logger
 import com.rarible.protocol.union.core.model.EsActivityCursor.Companion.fromActivityLite
-import com.rarible.protocol.union.enrichment.service.query.activity.ActivityQueryService
+import com.rarible.protocol.union.core.model.EsActivityLite
+import com.rarible.protocol.union.core.model.EsActivitySort
 import com.rarible.protocol.union.core.model.TypedActivityId
 import com.rarible.protocol.union.core.service.ActivityService
 import com.rarible.protocol.union.core.service.router.BlockchainRouter
@@ -13,16 +14,13 @@ import com.rarible.protocol.union.dto.ActivitiesDto
 import com.rarible.protocol.union.dto.ActivityDto
 import com.rarible.protocol.union.dto.ActivitySortDto
 import com.rarible.protocol.union.dto.ActivityTypeDto
-import com.rarible.protocol.union.dto.BlockchainDto
-import com.rarible.protocol.union.dto.UserActivityTypeDto
-import com.rarible.protocol.union.core.model.EsActivityLite
-import com.rarible.protocol.union.core.model.EsActivitySort
 import com.rarible.protocol.union.dto.AuctionBidActivityDto
 import com.rarible.protocol.union.dto.AuctionCancelActivityDto
 import com.rarible.protocol.union.dto.AuctionEndActivityDto
 import com.rarible.protocol.union.dto.AuctionFinishActivityDto
 import com.rarible.protocol.union.dto.AuctionOpenActivityDto
 import com.rarible.protocol.union.dto.AuctionStartActivityDto
+import com.rarible.protocol.union.dto.BlockchainDto
 import com.rarible.protocol.union.dto.BurnActivityDto
 import com.rarible.protocol.union.dto.L2DepositActivityDto
 import com.rarible.protocol.union.dto.L2WithdrawalActivityDto
@@ -36,8 +34,10 @@ import com.rarible.protocol.union.dto.OrderMatchSwapDto
 import com.rarible.protocol.union.dto.SyncSortDto
 import com.rarible.protocol.union.dto.SyncTypeDto
 import com.rarible.protocol.union.dto.TransferActivityDto
+import com.rarible.protocol.union.dto.UserActivityTypeDto
 import com.rarible.protocol.union.dto.parser.IdParser
 import com.rarible.protocol.union.enrichment.repository.search.EsActivityRepository
+import com.rarible.protocol.union.enrichment.service.query.activity.ActivityQueryService
 import org.springframework.stereotype.Service
 import java.time.Instant
 
@@ -155,12 +155,10 @@ class ActivityElasticService(
                 .computeIfAbsent(activity.blockchain) { ArrayList(esActivities.size) }
                 .add(TypedActivityId(IdParser.parseActivityId(activity.activityId).value, activity.type))
         }
-        val activities = mapping.mapAsync { element ->
-            val blockchain = element.key
-            val ids = element.value
+        val activities = mapping.flatMapAsync { (blockchain, ids) ->
             val isBlockchainEnabled = router.isBlockchainEnabled(blockchain)
             if (isBlockchainEnabled) router.getService(blockchain).getActivitiesByIds(ids) else emptyList()
-        }.flatten()
+        }
 
         val activitiesIdMapping = activities.associateBy { it.id.fullId() }
         return esActivities.mapNotNull { esActivity ->

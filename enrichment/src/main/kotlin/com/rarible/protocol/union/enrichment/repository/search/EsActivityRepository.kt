@@ -33,8 +33,11 @@ class EsActivityRepository(
     elasticClient,
     EsActivity::class.java,
     EsActivity::activityId.name,
-    EsActivity::activityId
 ) {
+
+    override fun entityId(entity: EsActivity): String {
+        return entity.activityId
+    }
 
     suspend fun search(
         filter: ElasticActivityFilter,

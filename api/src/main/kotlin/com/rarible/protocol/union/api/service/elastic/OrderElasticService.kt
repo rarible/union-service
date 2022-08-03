@@ -1,12 +1,16 @@
 package com.rarible.protocol.union.api.service.elastic
 
-import com.rarible.core.common.mapAsync
-import com.rarible.core.logging.Logger
+import com.rarible.core.common.flatMapAsync
 import com.rarible.protocol.union.core.model.EsAllOrderFilter
+import com.rarible.protocol.union.core.model.EsOrder
+import com.rarible.protocol.union.core.model.EsOrderBidOrdersByItem
+import com.rarible.protocol.union.core.model.EsOrderFilter
+import com.rarible.protocol.union.core.model.EsOrderSellOrders
+import com.rarible.protocol.union.core.model.EsOrderSellOrdersByItem
+import com.rarible.protocol.union.core.model.EsOrdersByMakers
 import com.rarible.protocol.union.core.service.OrderService
 import com.rarible.protocol.union.core.service.router.BlockchainRouter
 import com.rarible.protocol.union.dto.BlockchainDto
-import com.rarible.protocol.union.dto.OrderDto
 import com.rarible.protocol.union.dto.OrderSortDto
 import com.rarible.protocol.union.dto.OrderStatusDto
 import com.rarible.protocol.union.dto.OrdersDto
@@ -14,6 +18,7 @@ import com.rarible.protocol.union.dto.PlatformDto
 import com.rarible.protocol.union.dto.SyncSortDto
 import com.rarible.protocol.union.dto.continuation.DateIdContinuation
 import com.rarible.protocol.union.dto.continuation.page.PageSize
+import com.rarible.protocol.union.dto.parser.IdParser
 import com.rarible.protocol.union.enrichment.repository.search.EsOrderRepository
 import com.rarible.protocol.union.enrichment.service.query.order.OrderQueryService
 import org.springframework.stereotype.Service
@@ -23,10 +28,6 @@ class OrderElasticService(
     private val router: BlockchainRouter<OrderService>,
     private val esOrderRepository: EsOrderRepository
 ) : OrderQueryService {
-
-    companion object {
-        private val logger by Logger()
-    }
 
     @ExperimentalStdlibApi
     override suspend fun getOrdersAll(
@@ -46,28 +47,7 @@ class OrderElasticService(
             sort = sort ?: OrderSortDto.LAST_UPDATE_DESC,
             status = status,
         )
-        val esOrders = esOrderRepository.findByFilter(orderFilter)
-        val mapping = hashMapOf<BlockchainDto, MutableList<String>>()
-        esOrders.forEach { item ->
-            mapping
-                .computeIfAbsent(item.blockchain) { ArrayList(esOrders.size) }
-                .add(item.orderId)
-        }
-
-        val slices: List<OrderDto> = mapping.mapAsync { element ->
-            val blockchain = element.key
-            val ids = element.value
-
-            router.getService(blockchain).getOrdersByIds(ids)
-        }.flatten()
-
-        val last = esOrders.last()
-        return OrdersDto(
-            orders = slices, continuation = DateIdContinuation(
-                id = last.orderId,
-                date = last.lastUpdatedAt
-            ).toString()
-        )
+        return fetchOrders(orderFilter)
     }
 
     override suspend fun getAllSync(
@@ -88,7 +68,19 @@ class OrderElasticService(
         continuation: String?,
         size: Int?
     ): OrdersDto {
-        TODO("Not yet implemented")
+        val safeSize = PageSize.ORDER.limit(size)
+
+        val orderFilter = EsOrderSellOrdersByItem(
+            itemId = itemId,
+            platform = platform,
+            maker = maker,
+            origin = origin,
+            status = status,
+            continuation = DateIdContinuation.parse(continuation),
+            size = safeSize,
+            sort = OrderSortDto.LAST_UPDATE_DESC
+        )
+        return fetchOrders(orderFilter)
     }
 
     override suspend fun getOrderBidsByItem(
@@ -102,7 +94,19 @@ class OrderElasticService(
         continuation: String?,
         size: Int?
     ): OrdersDto {
-        TODO("Not yet implemented")
+        val safeSize = PageSize.ORDER.limit(size)
+
+        val orderFilter = EsOrderBidOrdersByItem(
+            itemId = itemId,
+            platform = platform,
+            maker = maker,
+            origin = origin,
+            status = status,
+            continuation = DateIdContinuation.parse(continuation),
+            size = safeSize,
+            sort = OrderSortDto.LAST_UPDATE_DESC
+        )
+        return fetchOrders(orderFilter)
     }
 
     override suspend fun getOrderBidsByMaker(
@@ -116,7 +120,19 @@ class OrderElasticService(
         continuation: String?,
         size: Int?
     ): OrdersDto {
-        TODO("Not yet implemented")
+        val safeSize = PageSize.ORDER.limit(size)
+
+        val orderFilter = EsOrdersByMakers(
+            platform = platform,
+            maker = maker,
+            origin = origin,
+            status = status,
+            continuation = DateIdContinuation.parse(continuation),
+            size = safeSize,
+            sort = OrderSortDto.LAST_UPDATE_DESC,
+            type = EsOrder.Type.BID
+        )
+        return fetchOrders(orderFilter)
     }
 
     override suspend fun getSellOrders(
@@ -126,7 +142,17 @@ class OrderElasticService(
         continuation: String?,
         size: Int?
     ): OrdersDto {
-        TODO("Not yet implemented")
+        val safeSize = PageSize.ORDER.limit(size)
+
+        val orderFilter = EsOrderSellOrders(
+            blockchains = blockchains,
+            platform = platform,
+            origin = origin,
+            continuation = DateIdContinuation.parse(continuation),
+            size = safeSize,
+            sort = OrderSortDto.LAST_UPDATE_DESC
+        )
+        return fetchOrders(orderFilter)
     }
 
     override suspend fun getSellOrdersByMaker(
@@ -138,6 +164,46 @@ class OrderElasticService(
         size: Int?,
         status: List<OrderStatusDto>?
     ): OrdersDto {
-        TODO("Not yet implemented")
+        val safeSize = PageSize.ORDER.limit(size)
+
+        val orderFilter = EsOrdersByMakers(
+            platform = platform,
+            maker = maker,
+            origin = origin,
+            status = status,
+            continuation = DateIdContinuation.parse(continuation),
+            size = safeSize,
+            sort = OrderSortDto.LAST_UPDATE_DESC,
+            type = EsOrder.Type.SELL
+        )
+        return fetchOrders(orderFilter)
+    }
+
+    suspend fun fetchOrders(orderFilter: EsOrderFilter): OrdersDto {
+        val esOrders = esOrderRepository.findByFilter(orderFilter)
+        val orderIdsByBlockchain = esOrders.groupBy(EsOrder::blockchain, EsOrder::orderId)
+
+        val slices = orderIdsByBlockchain.flatMapAsync { (blockchain, ids) ->
+            val isBlockchainEnabled = router.isBlockchainEnabled(blockchain)
+            if(isBlockchainEnabled) {
+                val rawIds = ids.map { IdParser.parseOrderId(it).value }
+                router.getService(blockchain).getOrdersByIds(rawIds)
+            } else emptyList()
+        }.associateBy { it.id.fullId() }
+
+        val sortedOrders = esOrders.map { slices[it.orderId]!! }
+
+        return if(esOrders.isEmpty()) {
+            OrdersDto(orders = emptyList(), continuation = null)
+        } else {
+            val last = esOrders.last()
+            OrdersDto(
+                orders = sortedOrders,
+                continuation = DateIdContinuation(
+                    id = last.orderId,
+                    date = last.lastUpdatedAt
+                ).toString()
+            )
+        }
     }
 }

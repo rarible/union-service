@@ -9,6 +9,7 @@ import com.rarible.protocol.union.core.elasticsearch.EsRepository
 import com.rarible.protocol.union.core.model.elasticsearch.EntityDefinitionExtended
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
+import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.runBlocking
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest
 import org.elasticsearch.action.bulk.BulkRequest
@@ -21,6 +22,7 @@ import org.springframework.data.elasticsearch.core.convert.ElasticsearchConverte
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates
 import org.springframework.data.elasticsearch.core.query.Criteria
 import org.springframework.data.elasticsearch.core.query.CriteriaQuery
+import org.springframework.data.elasticsearch.core.query.Query
 import java.io.IOException
 import javax.annotation.PostConstruct
 
@@ -32,13 +34,14 @@ abstract class ElasticSearchRepository<T>(
     private val elasticsearchConverter: ElasticsearchConverter,
     private val elasticClient: ReactiveElasticsearchClient,
     private val entityType: Class<T>,
-    private val idFieldName: String,
-    private val idResolver: (T) -> String
+    private val idFieldName: String
 ) : EsRepository {
 
     private val logger by Logger()
 
     private var brokenEsState: Boolean = true
+
+    abstract fun entityId(entity: T): String
 
     @PostConstruct
     override fun init() = runBlocking {
@@ -82,14 +85,24 @@ abstract class ElasticSearchRepository<T>(
             index(indexName).indexNames.forEach {
                 bulkRequest.add(
                     Requests.indexRequest(it)
-                        .id(idResolver(entity))
+                        .id(entityId(entity))
                         .source(document, XContentType.JSON)
                         .create(false)
                 )
             }
         }
 
-        elasticClient.bulk(bulkRequest).awaitFirst()
+        val result = elasticClient.bulk(bulkRequest).awaitFirst()
+
+        if(result.hasFailures()) {
+            logger.error(
+                "Failed to saveAll [{}] entities to index [{}] with policy {}: {}",
+                entities.size,
+                indexName,
+                refreshPolicy,
+                result.buildFailureMessage()
+            )
+        }
         return entities
     }
 
@@ -98,6 +111,11 @@ abstract class ElasticSearchRepository<T>(
         return esOperations.delete(
             query, entityType, entityDefinition.writeIndexCoordinates
         ).awaitFirstOrNull()?.deleted
+    }
+
+    //for tests
+    suspend fun deleteAll() {
+        esOperations.delete(Query.findAll(), entityType).awaitSingle()
     }
 
     override suspend fun refresh() {

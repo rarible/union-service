@@ -6,7 +6,6 @@ import com.rarible.protocol.union.core.FeatureFlagsProperties
 import com.rarible.protocol.union.core.converter.EsOrderConverter
 import com.rarible.protocol.union.dto.OrderEventDto
 import com.rarible.protocol.union.enrichment.repository.search.EsOrderRepository
-import org.elasticsearch.action.support.WriteRequest
 import org.springframework.stereotype.Service
 
 @Service
@@ -25,14 +24,8 @@ class OrderEventHandler(
             EsOrderConverter.convert(it)
         }
         logger.info("Saving ${convertedEvents.size} OrderDto events to ElasticSearch")
-        val refreshPolicy =
-            if (featureFlagsProperties.enableItemSaveImmediateToElasticSearch) {
-                WriteRequest.RefreshPolicy.IMMEDIATE
-            }
-            else {
-                WriteRequest.RefreshPolicy.NONE
-            }
-        repository.saveAll(convertedEvents, refreshPolicy = refreshPolicy)
-        logger.info("Handling completed")
+        val refreshPolicy = featureFlagsProperties.orderRefreshPolicy
+        val saved = repository.saveAll(convertedEvents, refreshPolicy = refreshPolicy)
+        logger.info("Handling completed, {}", saved.map { it.orderId })
     }
 }

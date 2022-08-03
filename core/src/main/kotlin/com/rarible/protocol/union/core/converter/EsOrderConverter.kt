@@ -32,6 +32,7 @@ import com.rarible.protocol.union.dto.TezosOrderDataRaribleV2DataV1Dto
 import com.rarible.protocol.union.dto.TezosXTZAssetTypeDto
 import com.rarible.protocol.union.dto.UnionAddress
 import com.rarible.protocol.union.core.model.EsOrder
+import com.rarible.protocol.union.dto.ext
 
 object EsOrderConverter {
 
@@ -48,10 +49,10 @@ object EsOrderConverter {
                 type = orderType(source.make),
                 blockchain = source.id.blockchain,
                 platform = source.platform,
-                maker = source.maker,
+                maker = source.maker.fullId(),
                 make = asset(source.make),
                 take = asset(source.take),
-                taker = source.taker,
+                taker = source.taker?.fullId(),
                 start = source.startedAt,
                 end = source.endedAt,
                 origins = origins(source.data),
@@ -59,7 +60,7 @@ object EsOrderConverter {
             )
     }
 
-    fun origins(data: OrderDataDto): List<UnionAddress> {
+    fun origins(data: OrderDataDto): List<String> {
         return when(data) {
             is EthOrderDataRaribleV2DataV1Dto -> data.payouts.map { it.account }
             is EthOrderOpenSeaV1DataV1Dto -> listOf(data.feeRecipient)
@@ -69,12 +70,14 @@ object EsOrderConverter {
             is EthOrderDataLegacyDto,
             is EthOrderCryptoPunksDataDto -> emptyList()
             else -> emptyList()
-        }
+        }.map { it.fullId() }
     }
 
     fun asset(assetDto: AssetDto): EsOrder.Asset {
         return EsOrder.Asset(
-            type = assetDto.type
+            address = assetDto.type.ext.itemId.toString(),
+            isNft = assetDto.type.ext.isNft,
+            value = assetDto.value
         )
     }
 

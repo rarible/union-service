@@ -1,8 +1,11 @@
+@file:OptIn(ExperimentalStdlibApi::class, ExperimentalStdlibApi::class)
+
 package com.rarible.protocol.union.core.model
 
 import com.rarible.protocol.union.dto.BlockchainDto
 import com.rarible.protocol.union.dto.OrderSortDto
 import com.rarible.protocol.union.dto.OrderStatusDto
+import com.rarible.protocol.union.dto.PlatformDto
 import com.rarible.protocol.union.dto.continuation.DateIdContinuation
 import org.elasticsearch.index.query.QueryBuilder
 import org.elasticsearch.index.query.QueryBuilders
@@ -46,7 +49,6 @@ interface EsOrderFilter {
     }
 }
 
-@ExperimentalStdlibApi
 data class EsAllOrderFilter(
     private val blockchains: Collection<BlockchainDto>?,
     private val continuation: DateIdContinuation?,
@@ -70,16 +72,164 @@ data class EsAllOrderFilter(
     }
 }
 
-data class EsOrderByIdFilter(
-    val orderId: String,
-) : EsOrderFilter {
-    override fun asQuery(): Query =
-        NativeSearchQueryBuilder().withQuery(QueryBuilders.idsQuery().addIds(orderId)).build()
+data class EsOrderSellOrdersByItem(
+    val itemId: String,
+    val platform: PlatformDto?,
+    val maker: String?,
+    val origin: String?,
+    val status: List<OrderStatusDto>?,
+    val continuation: DateIdContinuation?,
+    val sort: OrderSortDto,
+    val size: Int
+): EsOrderFilter {
+    override fun asQuery(): Query {
+        val list = buildList {
+            add(QueryBuilders.termsQuery(
+                "${EsOrder::make.name}.${EsOrder.Asset::address.name}",
+                itemId
+            ))
+
+            add(QueryBuilders.termsQuery(
+                EsOrder::type.name,
+                EsOrder.Type.SELL.name
+            ))
+
+            if(platform != null) {
+                add(QueryBuilders.termsQuery(EsOrder::platform.name, platform.name))
+            }
+
+            if(maker != null) {
+                add(QueryBuilders.termsQuery(EsOrder::maker.name, maker))
+            }
+
+            if(origin != null) {
+                add(QueryBuilders.termsQuery(EsOrder::origins.name, origin))
+            }
+
+            if(status != null) {
+                add(QueryBuilders.termsQuery(EsOrder::status.name, status.map { it.name }))
+            }
+
+        }
+
+        return genericBuild(continuation, size, sort, *list.toTypedArray())
+    }
 }
 
-data class EsOrderByIdsFilter(
-    val orderIds: Collection<String>,
+data class EsOrderBidOrdersByItem(
+    val itemId: String,
+    val platform: PlatformDto?,
+    val maker: List<String>?,
+    val origin: String?,
+    val status: List<OrderStatusDto>?,
+    val continuation: DateIdContinuation?,
+    val sort: OrderSortDto,
+    val size: Int
+): EsOrderFilter {
+    override fun asQuery(): Query {
+        val list = buildList {
+            add(QueryBuilders.termsQuery(
+                "${EsOrder::take.name}.${EsOrder.Asset::address.name}",
+                itemId
+            ))
+            add(QueryBuilders.termsQuery(
+                EsOrder::type.name,
+                EsOrder.Type.SELL.name
+            ))
+
+            if(platform != null) {
+                add(QueryBuilders.termsQuery(EsOrder::platform.name, platform.name))
+            }
+
+            if(maker != null) {
+                add(QueryBuilders.termsQuery(EsOrder::maker.name, maker))
+            }
+
+            if(origin != null) {
+                add(QueryBuilders.termsQuery(EsOrder::origins.name, origin))
+            }
+
+            if(status != null) {
+                add(QueryBuilders.termsQuery(EsOrder::status.name, status.map { it.name }))
+            }
+
+        }
+
+        return genericBuild(continuation, size, sort, *list.toTypedArray())
+    }
+
+}
+
+data class EsOrdersByMakers(
+    val platform: PlatformDto?,
+    val maker: List<String>?,
+    val origin: String?,
+    val status: List<OrderStatusDto>?,
+    val continuation: DateIdContinuation?,
+    val size: Int,
+    val sort: OrderSortDto,
+    val type: EsOrder.Type
 ) : EsOrderFilter {
-    override fun asQuery(): Query =
-        NativeSearchQueryBuilder().withQuery(QueryBuilders.idsQuery().addIds(*orderIds.toTypedArray())).build()
+    override fun asQuery(): Query {
+        val list = buildList {
+            add(QueryBuilders.termsQuery(
+                EsOrder::type.name,
+                type.name
+            ))
+
+            if(platform != null) {
+                add(QueryBuilders.termsQuery(EsOrder::platform.name, platform.name))
+            }
+
+            if(maker != null) {
+                add(QueryBuilders.termsQuery(EsOrder::maker.name, maker))
+            }
+
+            if(origin != null) {
+                add(QueryBuilders.termsQuery(EsOrder::origins.name, origin))
+            }
+
+            if(status != null) {
+                add(QueryBuilders.termsQuery(EsOrder::status.name, status.map { it.name }))
+            }
+
+        }
+
+        return genericBuild(continuation, size, sort, *list.toTypedArray())
+    }
+
+}
+
+data class EsOrderSellOrders(
+    val blockchains: List<BlockchainDto>?,
+    val platform: PlatformDto?,
+    val origin: String?,
+    val continuation: DateIdContinuation?,
+    val size: Int,
+    val sort: OrderSortDto,
+) : EsOrderFilter {
+    override fun asQuery(): Query {
+        val list = buildList {
+            add(QueryBuilders.termsQuery(
+                EsOrder::type.name,
+                EsOrder.Type.SELL.name
+            ))
+
+            if (blockchains != null) {
+                add(QueryBuilders.termsQuery(EsOrder::blockchain.name, blockchains.map { it.name }))
+            }
+
+            if(platform != null) {
+                add(QueryBuilders.termsQuery(EsOrder::platform.name, platform.name))
+            }
+
+            if(origin != null) {
+                add(QueryBuilders.termsQuery(EsOrder::origins.name, origin))
+            }
+
+        }
+
+        return genericBuild(continuation, size, sort, *list.toTypedArray())
+    }
+
 }

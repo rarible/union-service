@@ -20,64 +20,34 @@
       "type": "keyword"
     },
     "maker": {
-      "properties": {
-        "blockchainGroup": {
-          "type": "keyword"
-        },
-        "value": {
-          "type": "keyword"
-        }
-      }
+      "type": "keyword"
     },
     "make": {
       "properties": {
-        "type": {
-          "properties": {
-            "contract": {
-              "properties": {
-                "blockchain": {
-                  "type": "keyword"
-                },
-                "value": {
-                  "type": "keyword"
-                }
-              }
-            },
-            "tokenId": {
-              "type": "keyword"
-            }
-          }
+        "address": {
+          "type": "keyword"
+        },
+        "isNft": {
+          "type": "boolean"
+        },
+        "value": {
+          "type": "double"
         }
       }
     },
     "taker": {
-      "properties": {
-        "blockchainGroup": {
-          "type": "keyword"
-        },
-        "value": {
-          "type": "keyword"
-        }
-      }
+      "type": "keyword"
     },
     "take": {
       "properties": {
-        "type": {
-          "properties": {
-            "contract": {
-              "properties": {
-                "blockchain": {
-                  "type": "keyword"
-                },
-                "value": {
-                  "type": "keyword"
-                }
-              }
-            },
-            "tokenId": {
-              "type": "keyword"
-            }
-          }
+        "address": {
+          "type": "keyword"
+        },
+        "isNft": {
+          "type": "boolean"
+        },
+        "value": {
+          "type": "double"
         }
       }
     },

@@ -8,8 +8,6 @@ import com.rarible.protocol.flow.nft.api.client.FlowNftItemControllerApi
 import com.rarible.protocol.nft.api.client.NftItemControllerApi
 import com.rarible.protocol.union.core.FeatureFlagsProperties
 import com.rarible.protocol.union.core.converter.EsActivityConverter
-import com.rarible.protocol.union.core.service.ItemService
-import com.rarible.protocol.union.core.service.router.BlockchainRouter
 import com.rarible.protocol.union.dto.ActivityDto
 import com.rarible.protocol.union.dto.CollectionEventDto
 import com.rarible.protocol.union.dto.ItemEventDto
@@ -33,6 +31,7 @@ import com.rarible.protocol.union.subscriber.UnionKafkaJsonSerializer
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.mockk
+import org.elasticsearch.action.support.WriteRequest
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
@@ -73,7 +72,7 @@ class TestIndexerConfiguration {
 
     @Bean
     fun orderHandler(repository: EsOrderRepository): ConsumerBatchEventHandler<OrderEventDto> {
-        return OrderEventHandler(FeatureFlagsProperties(), repository)
+        return OrderEventHandler(FeatureFlagsProperties(orderRefreshPolicy = WriteRequest.RefreshPolicy.IMMEDIATE), repository)
     }
 
     @Bean

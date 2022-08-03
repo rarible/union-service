@@ -25,8 +25,11 @@ class EsOrderRepository(
     elasticClient,
     EsOrder::class.java,
     EsOrder::orderId.name,
-    EsOrder::orderId
 ) {
+
+    override fun entityId(entity: EsOrder): String {
+        return entity.orderId
+    }
 
     suspend fun findByFilter(filter: EsOrderFilter): List<EsOrder> {
         val query = filter.asQuery()
