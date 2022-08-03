@@ -82,6 +82,24 @@
     },
     "lastUpdatedAt": {
       "type": "date"
+    },
+    "bestSellAmount": {
+      "type": "double"
+    },
+    "bestSellCurrency": {
+      "type": "keyword"
+    },
+    "bestSellMarketplace": {
+      "type": "keyword"
+    },
+    "bestBidAmount": {
+      "type": "double"
+    },
+    "bestBidCurrency": {
+      "type": "keyword"
+    },
+    "bestBidMarketplace": {
+      "type": "keyword"
     }
   }
 }

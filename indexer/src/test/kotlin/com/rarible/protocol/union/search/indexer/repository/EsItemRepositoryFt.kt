@@ -91,6 +91,7 @@ internal class EsItemRepositoryFt {
         repository.save(esItem)
         val result =
             repository.search(EsItemGenericFilter(collections = setOf(esItem.collection!!)), EsItemSort.DEFAULT, 10)
+                .entities
 
         assertThat(result.size).isEqualTo(1)
 
@@ -106,7 +107,7 @@ internal class EsItemRepositoryFt {
             EsItemGenericFilter(
 //                    owners = setOf(esItem.owner!!)
             ), EsItemSort.DEFAULT, 10
-        )
+        ).entities
 
         assertThat(result.size).isEqualTo(1)
 
@@ -120,6 +121,7 @@ internal class EsItemRepositoryFt {
         repository.save(esItem)
         val result =
             repository.search(EsItemGenericFilter(creators = setOf(esItem.creators.first())), EsItemSort.DEFAULT, 10)
+                .entities
 
         assertThat(result.size).isEqualTo(1)
 
@@ -133,7 +135,7 @@ internal class EsItemRepositoryFt {
         repository.save(esItem)
         val result = repository.search(
             EsItemGenericFilter(blockchains = setOf(esItem.blockchain.toString())), EsItemSort.DEFAULT, 10
-        )
+        ).entities
 
         assertThat(result.size).isEqualTo(1)
 
@@ -147,7 +149,7 @@ internal class EsItemRepositoryFt {
         repository.save(esItem)
         val result = repository.search(
             EsItemGenericFilter(itemIds = setOf(esItem.itemId)), EsItemSort.DEFAULT, 10
-        )
+        ).entities
 
         assertThat(result.size).isEqualTo(1)
 
@@ -166,19 +168,19 @@ internal class EsItemRepositoryFt {
 
         val result = repository.search(
             EsItemGenericFilter(mintedFrom = now), EsItemSort.DEFAULT, 200
-        )
+        ).entities
 
         assertThat(result.size).isEqualTo(100)
 
         val result1 = repository.search(
             EsItemGenericFilter(mintedFrom = now, mintedTo = now.plusSeconds(50)), EsItemSort.DEFAULT, 200
-        )
+        ).entities
 
         assertThat(result1.size).isEqualTo(50)
 
         val result2 = repository.search(
             EsItemGenericFilter(mintedFrom = now.plusSeconds(21), mintedTo = now.plusSeconds(50)), EsItemSort.DEFAULT, 200
-        )
+        ).entities
 
         assertThat(result2.size).isEqualTo(30)
     }
@@ -191,7 +193,7 @@ internal class EsItemRepositoryFt {
 
         val result = repository.search(
             EsItemGenericFilter(text = esItems[13].name), EsItemSort.DEFAULT, 10
-        )
+        ).entities
 
         assertThat(result.size).isEqualTo(1)
         assertThat(result[0].itemId).isEqualTo(esItems[13].itemId)
@@ -214,7 +216,7 @@ internal class EsItemRepositoryFt {
 
                     val result = repository.search(
                         EsItemGenericFilter(text = it), EsItemSort.DEFAULT, 10
-                    )
+                    ).entities
 
                     assertThat(result.size).isEqualTo(1)
                     assertThat(result[0].itemId).isEqualTo(esItem.itemId)
@@ -231,7 +233,7 @@ internal class EsItemRepositoryFt {
 
         val result = repository.search(
             EsItemGenericFilter(text = esItems[13].traits[1].value), EsItemSort.DEFAULT, 10
-        )
+        ).entities
 
         assertThat(result.size).isEqualTo(1)
         assertThat(result[0].itemId).isEqualTo(esItems[13].itemId)
@@ -245,7 +247,7 @@ internal class EsItemRepositoryFt {
 
         val result = repository.search(
             EsItemGenericFilter(text = esItems[13].traits[0].value), EsItemSort.DEFAULT, 10
-        )
+        ).entities
 
         assertThat(result.size).isEqualTo(1)
         assertThat(result[0].itemId).isEqualTo(esItems[13].itemId)
@@ -258,7 +260,7 @@ internal class EsItemRepositoryFt {
         repository.save(esItem)
         val result = repository.search(
             EsItemGenericFilter(text = esItem.traits[2].value), EsItemSort.DEFAULT, 10
-        )
+        ).entities
 
         assertThat(result.size).isEqualTo(1)
         assertThat(result[0].itemId).isEqualTo(esItem.itemId)

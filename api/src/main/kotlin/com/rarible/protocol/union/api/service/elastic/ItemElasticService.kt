@@ -6,8 +6,6 @@ import com.rarible.core.common.mapAsync
 import com.rarible.core.logging.Logger
 import com.rarible.protocol.union.core.converter.ItemOwnershipConverter
 import com.rarible.protocol.union.core.model.EsItem
-import com.rarible.protocol.union.core.model.EsItemCursor
-import com.rarible.protocol.union.core.model.EsItemCursor.Companion.fromItem
 import com.rarible.protocol.union.core.model.EsItemSort
 import com.rarible.protocol.union.core.model.EsOwnership
 import com.rarible.protocol.union.core.model.EsOwnershipByOwnerFilter
@@ -83,25 +81,25 @@ class ItemElasticService(
         logger.info("Built filter: $filter")
         val queryResult = esItemRepository.search(filter, EsItemSort.DEFAULT, safeSize)
         logger.info("Query result: $queryResult")
-        val items = getItems(queryResult)
-        val cursor = if (queryResult.isEmpty()) null else queryResult.last().fromItem()
+        val items = getItems(queryResult.entities)
+        val cursor = queryResult.continuation
 
         logger.info(
             "Response for getItemsByCollection(collection={}, continuation={}, size={}):" +
                 " Page(size={}, continuation={})",
-            collection, continuation, size, queryResult.size, cursor
+            collection, continuation, size, items.size, cursor
         )
         val enriched = itemEnrichService.enrich(items)
 
         return ItemsDto(
             items = enriched,
-            continuation = cursor.toString()
+            continuation = cursor
         )
     }
 
     override suspend fun getAllItemIdsByCollection(collectionId: CollectionIdDto): Flow<ItemIdDto> {
         val pageSize = PageSize.ITEM.max
-        var cursor: EsItemCursor? = null
+        var cursor: String? = null
         var returned = 0L
         return flow {
             while (true) {
@@ -109,10 +107,10 @@ class ItemElasticService(
                 logger.info("Built filter: $filter")
                 val queryResult = esItemRepository.search(filter, EsItemSort.DEFAULT, pageSize)
                 logger.info("Query result: $queryResult")
-                queryResult.forEach { emit(IdParser.parseItemId(it.itemId)) }
-                cursor = if (queryResult.isEmpty()) null else queryResult.last().fromItem()
+                queryResult.entities.forEach { emit(IdParser.parseItemId(it.itemId)) }
+                cursor = queryResult.continuation
                 if (cursor == null) break
-                returned += queryResult.size
+                returned += queryResult.entities.size
                 check(returned < 1_000_000) { "Cyclic continuation $cursor for collection $collectionId" }
             }
         }
@@ -130,16 +128,16 @@ class ItemElasticService(
         val filter = itemFilterConverter.getItemsByCreator(creatorAddress.fullId(), continuation)
         logger.info("Built filter: $filter")
         val queryResult = esItemRepository.search(filter, EsItemSort.DEFAULT, safeSize)
-        val cursor = if (queryResult.isEmpty()) null else queryResult.last().fromItem()
+        val cursor = queryResult.continuation
         logger.info("Query result: $queryResult")
 
-        if (queryResult.isEmpty()) return ItemsDto()
-        val items = getItems(queryResult)
+        if (queryResult.entities.isEmpty()) return ItemsDto()
+        val items = getItems(queryResult.entities)
         val enriched = itemEnrichService.enrich(items)
 
         return ItemsDto(
             items = enriched,
-            continuation = cursor.toString()
+            continuation = cursor
         )
     }
 
@@ -211,11 +209,11 @@ class ItemElasticService(
         val cursor = DateIdContinuation.parse(request.continuation)?.toString()
         val filter = itemFilterConverter.searchItems(request.filter, cursor)
         val result = esItemRepository.search(filter, EsItemSort.DEFAULT, request.size)
-        if (result.isEmpty()) return ItemsDto()
-        val items = getItems(result)
+        if (result.entities.isEmpty()) return ItemsDto()
+        val items = getItems(result.entities)
         val enriched = itemEnrichService.enrich(items)
         return ItemsDto(
-            continuation = result.last().fromItem().toString(),
+            continuation = result.continuation,
             items = enriched
         )
     }
@@ -278,11 +276,10 @@ class ItemElasticService(
         logger.info("Built filter: $filter")
         val queryResult = esItemRepository.search(filter, EsItemSort.DEFAULT, size)
         logger.info("Query result: $queryResult")
-        val cursor = if (queryResult.isEmpty()) null else queryResult.last().fromItem()
-        val items = getItems(queryResult)
+        val items = getItems(queryResult.entities)
         return Slice(
             entities = items,
-            continuation = cursor.toString()
+            continuation = queryResult.continuation
         )
     }
 

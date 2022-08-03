@@ -6,18 +6,24 @@ import com.rarible.core.test.data.randomBoolean
 import com.rarible.core.test.data.randomInt
 import com.rarible.core.test.data.randomString
 import com.rarible.protocol.union.core.converter.EsItemConverter.toEsItem
+import com.rarible.protocol.union.dto.AssetDto
 import com.rarible.protocol.union.dto.BlockchainDto
 import com.rarible.protocol.union.dto.BlockchainGroupDto
 import com.rarible.protocol.union.dto.CollectionIdDto
+import com.rarible.protocol.union.dto.ContractAddress
 import com.rarible.protocol.union.dto.CreatorDto
+import com.rarible.protocol.union.dto.EthErc20AssetTypeDto
 import com.rarible.protocol.union.dto.ItemDto
 import com.rarible.protocol.union.dto.ItemIdDto
 import com.rarible.protocol.union.dto.MetaAttributeDto
 import com.rarible.protocol.union.dto.MetaDto
 import com.rarible.protocol.union.dto.UnionAddress
+import com.rarible.protocol.union.dto.ext
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DynamicTest.dynamicTest
 import org.junit.jupiter.api.TestFactory
+import randomOrder
+import java.math.BigDecimal
 import java.math.BigInteger
 
 class EsItemConverterTest {
@@ -62,7 +68,19 @@ class EsItemConverterTest {
                     ),
                     content = emptyList(),
                     restrictions = emptyList()
-                )
+                ),
+                bestSellOrder = randomOrder(
+                    take = AssetDto(
+                        EthErc20AssetTypeDto(ContractAddress(BlockchainDto.ETHEREUM, randomString())),
+                        BigDecimal("10")
+                    )
+                ),
+                bestBidOrder = randomOrder(
+                    make = AssetDto(
+                        EthErc20AssetTypeDto(ContractAddress(BlockchainDto.ETHEREUM, randomString())),
+                        BigDecimal("5")
+                    )
+                ),
             ),
             ItemDto(
                 id = ItemIdDto(BlockchainDto.FLOW, randomAddress().toString(), BigInteger.ONE),
@@ -114,6 +132,18 @@ class EsItemConverterTest {
                     assertThat(esItem.traits[0].value).isEqualTo(it.attributes[0].value)
                     assertThat(esItem.traits[1].key).isEqualTo(it.attributes[1].key)
                     assertThat(esItem.traits[1].value).isEqualTo(it.attributes[1].value)
+                }
+
+                unionItem.bestSellOrder?.let {
+                    assertThat(esItem.bestSellAmount).isEqualTo(10.0)
+                    assertThat(esItem.bestSellCurrency).isEqualTo(it.take.type.ext.currencyAddress())
+                    assertThat(esItem.bestSellMarketplace).isEqualTo(it.platform.name)
+                }
+
+                unionItem.bestBidOrder?.let {
+                    assertThat(esItem.bestBidAmount).isEqualTo(5.0)
+                    assertThat(esItem.bestBidCurrency).isEqualTo(it.make.type.ext.currencyAddress())
+                    assertThat(esItem.bestBidMarketplace).isEqualTo(it.platform.name)
                 }
             }
         }

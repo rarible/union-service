@@ -4,11 +4,12 @@ import com.rarible.protocol.union.dto.BlockchainDto
 import java.time.Instant
 
 sealed class EsItemFilter {
+    abstract val blockchains: Set<String>?
     abstract val cursor: String?
 }
 
 data class EsItemGenericFilter(
-    val blockchains: Set<String>? = null,
+    override val blockchains: Set<String>? = null,
     val itemIds: Set<String>? = null,
     val creators: Set<String> = emptySet(),
     val owners: Set<String> ? = null,

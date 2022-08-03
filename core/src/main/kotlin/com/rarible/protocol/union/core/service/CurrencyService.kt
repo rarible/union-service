@@ -4,6 +4,7 @@ import com.rarible.core.common.nowMillis
 import com.rarible.protocol.union.core.client.CurrencyClient
 import com.rarible.protocol.union.core.converter.CurrencyConverter
 import com.rarible.protocol.union.core.exception.UnionCurrencyException
+import com.rarible.protocol.union.core.model.CurrencyRate
 import com.rarible.protocol.union.dto.AssetTypeDto
 import com.rarible.protocol.union.dto.BlockchainDto
 import com.rarible.protocol.union.dto.CurrencyDto
@@ -30,13 +31,28 @@ class CurrencyService(
         it to ConcurrentHashMap<String, CurrencyUsdRateDto?>()
     }
 
+    @Volatile
     private var cachedCurrencies: List<CurrencyDto> = emptyList()
+
+    @Volatile
+    private var cachedCurrencyRates: List<CurrencyRate> = emptyList()
 
     suspend fun getAllCurrencies(): List<CurrencyDto> {
         if (this.cachedCurrencies.isEmpty()) {
             cachedCurrencies = currencyClient.getAllCurrencies().map { CurrencyConverter.convert(it) }
         }
         return cachedCurrencies
+    }
+
+    /**
+     * In some race condition cases at the service start it is possible to query external CurrencyService several times,
+     * but we're fine with that
+     */
+    suspend fun getAllCurrencyRates(): List<CurrencyRate> {
+        if (cachedCurrencyRates.isEmpty()) {
+            cachedCurrencyRates = getCurrencyRatesInner()
+        }
+        return cachedCurrencyRates
     }
 
     // Read currency rate directly from Currency-Service (for API calls)
@@ -115,6 +131,7 @@ class CurrencyService(
                 async { refreshCurrency(it.first, it.second) }
             }.awaitAll()
             cachedCurrencies = currencyClient.getAllCurrencies().map { CurrencyConverter.convert(it) }
+            cachedCurrencyRates = getCurrencyRatesInner()
         }
     }
 
@@ -141,6 +158,21 @@ class CurrencyService(
         } catch (e: Exception) {
             logger.error("Unable to get currency rate for $blockchain with address [$address]: ${e.message}", e)
             null
+        }
+    }
+
+    private suspend fun getCurrencyRatesInner(): List<CurrencyRate> {
+        val currencies = getAllCurrencies()
+
+        return currencies.mapNotNull { currency ->
+            val usdRate = getCurrentRate(currency.currencyId.blockchain, currency.currencyId.value)
+                ?: return@mapNotNull null
+
+            CurrencyRate(
+                blockchain = currency.currencyId.blockchain,
+                currencyId = currency.currencyId.fullId(),
+                rate = usdRate.rate
+            )
         }
     }
 

@@ -4,10 +4,12 @@ import com.rarible.protocol.union.core.model.EsItem
 import com.rarible.protocol.union.core.model.EsItemFilter
 import com.rarible.protocol.union.core.model.EsItemGenericFilter
 import com.rarible.protocol.union.core.model.EsItemSort
+import com.rarible.protocol.union.dto.BlockchainDto
 import org.apache.lucene.search.join.ScoreMode
 import org.elasticsearch.index.query.BoolQueryBuilder
 import org.elasticsearch.index.query.MultiMatchQueryBuilder
 import org.elasticsearch.index.query.Operator
+import org.elasticsearch.index.query.QueryBuilder
 import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.index.query.QueryBuilders.termsQuery
 import org.springframework.data.elasticsearch.core.query.NativeSearchQuery
@@ -17,21 +19,43 @@ import org.springframework.stereotype.Component
 @Component
 class EsItemQueryBuilderService(
     private val cursorService: EsItemQueryCursorService,
+    private val scoreService: EsItemQueryScoreService,
     private val sortService: EsItemQuerySortService,
 ) {
+    companion object {
+        private val SCORE_SORT_TYPES: Set<EsItemSort> = setOf(
+            EsItemSort.LOWEST_SELL_PRICE_FIRST,
+            EsItemSort.HIGHEST_SELL_PRICE_FIRST,
+            EsItemSort.LOWEST_BID_PRICE_FIRST,
+            EsItemSort.HIGHEST_BID_PRICE_FIRST
+        )
+    }
 
-    fun build(filter: EsItemFilter, sort: EsItemSort): NativeSearchQuery {
+    suspend fun build(filter: EsItemFilter, sort: EsItemSort): NativeSearchQuery {
         val builder = NativeSearchQueryBuilder()
-        val query = BoolQueryBuilder()
+        val isScoreSort = SCORE_SORT_TYPES.contains(sort)
+
+        var query: QueryBuilder = BoolQueryBuilder()
+        query as BoolQueryBuilder
         when (filter) {
             is EsItemGenericFilter -> query.applyGenericFilter(filter)
         }
 
+        if (isScoreSort) {
+            val blockchains = if (filter.blockchains.isNullOrEmpty()) {
+                BlockchainDto.values().toSet()
+            } else {
+                filter.blockchains!!.map { BlockchainDto.valueOf(it) }.toSet()
+            }
+            query = scoreService.buildQuery(query, sort, blockchains)
+        }
+
         sortService.applySort(builder, sort)
-        cursorService.applyCursor(query, sort, filter.cursor)
 
         builder.withQuery(query)
-        return builder.build()
+        val resultQuery = builder.build()
+        resultQuery.searchAfter = cursorService.buildSearchAfterClause(filter.cursor)
+        return resultQuery
     }
 
     private fun BoolQueryBuilder.applyGenericFilter(filter: EsItemGenericFilter) {

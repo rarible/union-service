@@ -1,6 +1,7 @@
 package com.rarible.protocol.union.enrichment.test.data
 
 import com.rarible.core.common.nowMillis
+import com.rarible.core.test.data.randomDouble
 import com.rarible.core.test.data.randomInt
 import com.rarible.core.test.data.randomLong
 import com.rarible.core.test.data.randomString
@@ -33,6 +34,7 @@ import com.rarible.protocol.union.dto.OrderListActivityDto
 import com.rarible.protocol.union.dto.OrderMatchSellDto
 import com.rarible.protocol.union.dto.OwnershipDto
 import com.rarible.protocol.union.dto.OwnershipIdDto
+import com.rarible.protocol.union.dto.PlatformDto
 import com.rarible.protocol.union.dto.TransferActivityDto
 import com.rarible.protocol.union.dto.UnionAddress
 import com.rarible.protocol.union.enrichment.converter.EnrichedItemConverter
@@ -300,7 +302,13 @@ fun randomEsItem() = EsItem(
     traits = listOf(EsTrait(randomString(), randomInt().toString()), EsTrait(randomString(), randomString())),
     creators = listOf(randomString()),
     mintedAt = nowMillis(),
-    lastUpdatedAt = nowMillis()
+    lastUpdatedAt = nowMillis(),
+    bestSellAmount = randomDouble(),
+    bestSellCurrency = randomString(),
+    bestSellMarketplace = randomMarketplace().name,
+    bestBidAmount = randomDouble(),
+    bestBidCurrency = randomString(),
+    bestBidMarketplace = randomMarketplace().name,
 )
 
 val EsActivity.info: EsActivityLite
@@ -343,4 +351,8 @@ fun randomItemMetaDownloadEntry(
         failedAt = failedAt,
         errorMessage = errorMessage
     )
+}
+
+fun randomMarketplace(): PlatformDto {
+    return PlatformDto.values().random()
 }

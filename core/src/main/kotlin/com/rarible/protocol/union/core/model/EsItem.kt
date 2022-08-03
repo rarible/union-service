@@ -28,7 +28,14 @@ data class EsItem(
 
     @Field(type = FieldType.Date)
     val lastUpdatedAt: Instant,
-    val self: Boolean? = false
+    val self: Boolean? = false,
+
+    val bestSellAmount: Double? = null,
+    val bestSellCurrency: String? = null, // blockchain:currencyAddress
+    val bestSellMarketplace: String? = null,
+    val bestBidAmount: Double? = null,
+    val bestBidCurrency: String? = null, // blockchain:currencyAddress
+    val bestBidMarketplace: String? = null,
 ) {
     companion object {
         private const val VERSION: Int = 1

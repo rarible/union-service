@@ -46,3 +46,10 @@ fun NativeSearchQueryBuilder.sortByField(field: KProperty<*>, order: SortOrder) 
         .order(order)
     withSort(sort)
 }
+
+fun NativeSearchQueryBuilder.sortByField(fieldName: String, order: SortOrder) {
+    val sort = SortBuilders
+        .fieldSort(fieldName)
+        .order(order)
+    withSort(sort)
+}

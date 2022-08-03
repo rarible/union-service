@@ -21,6 +21,7 @@ spring:
 logging:
   level:
     org.springframework.context.annotation: "DEBUG"
+    org.springframework.data.elasticsearch.core.QUERY: DEBUG
 
 common:
   producer:

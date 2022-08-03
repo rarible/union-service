@@ -15,9 +15,12 @@ import com.rarible.protocol.union.dto.BlockchainDto
 import com.rarible.protocol.union.dto.CurrencyDto
 import com.rarible.protocol.union.dto.EthErc20AssetTypeDto
 import com.rarible.protocol.union.dto.EthErc721AssetTypeDto
+
+import com.rarible.protocol.currency.dto.CurrencyDto as CurrencyDtoExternal
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
@@ -207,6 +210,77 @@ class CurrencyServiceTest {
         verifyCurrency(flowBlockchain, flowAddress, 2)
     }
 
+    @Test
+    fun `should get all currency rates`() = runBlocking<Unit> {
+        // given
+        coEvery {
+            currencyControllerApi.allCurrencies
+        } returns CurrenciesDto(
+            currencies = listOf(
+                CurrencyDtoExternal(
+                    currencyId = "ETHEREUM:123",
+                    address = "123",
+                    blockchain = com.rarible.protocol.currency.dto.BlockchainDto.ETHEREUM,
+                ),
+                CurrencyDtoExternal(
+                    currencyId = "FLOW:456",
+                    address = "456",
+                    blockchain = com.rarible.protocol.currency.dto.BlockchainDto.FLOW,
+                )
+            )
+        ).toMono()
+        mockCurrency(BlockchainDto.ETHEREUM, "123", BigDecimal(4))
+        mockCurrency(BlockchainDto.FLOW, "456", BigDecimal(6))
+
+        // when
+        val currencyRates = currencyService.getAllCurrencyRates()
+
+        // then
+        assertThat(currencyRates).hasSize(2)
+        assertThat(currencyRates.first().blockchain).isEqualTo(BlockchainDto.ETHEREUM)
+        assertThat(currencyRates.first().currencyId).isEqualTo("ETHEREUM:123")
+        assertThat(currencyRates.first().rate).isEqualTo(BigDecimal(4))
+        assertThat(currencyRates.last().blockchain).isEqualTo(BlockchainDto.FLOW)
+        assertThat(currencyRates.last().currencyId).isEqualTo("FLOW:456")
+        assertThat(currencyRates.last().rate).isEqualTo(BigDecimal(6))
+    }
+
+    @Test
+    fun `should cache consequent calls of getAllCurrencyRates`() = runBlocking<Unit> {
+        // given
+        coEvery {
+            currencyControllerApi.allCurrencies
+        } returns CurrenciesDto(
+            currencies = listOf(
+                CurrencyDtoExternal(
+                    currencyId = "ETHEREUM:123",
+                    address = "123",
+                    blockchain = com.rarible.protocol.currency.dto.BlockchainDto.ETHEREUM,
+                ),
+                CurrencyDtoExternal(
+                    currencyId = "FLOW:456",
+                    address = "456",
+                    blockchain = com.rarible.protocol.currency.dto.BlockchainDto.FLOW,
+                )
+            )
+        ).toMono()
+        mockCurrency(BlockchainDto.ETHEREUM, "123", BigDecimal(4))
+        mockCurrency(BlockchainDto.FLOW, "456", BigDecimal(6))
+
+        // when
+        val actual1 = currencyService.getAllCurrencyRates()
+        val actual2 = currencyService.getAllCurrencyRates()
+
+        // then
+        assertThat(actual1).isEqualTo(actual2)
+        coVerify(exactly = 1) {
+            currencyControllerApi.allCurrencies
+            currencyControllerApi.getCurrencyRate(com.rarible.protocol.currency.dto.BlockchainDto.ETHEREUM, "123", any())
+            currencyControllerApi.getCurrencyRate(com.rarible.protocol.currency.dto.BlockchainDto.FLOW, "456", any())
+        }
+        confirmVerified(currencyControllerApi)
+    }
+
     private fun mockCurrency(blockchain: BlockchainDto, address: String, vararg rates: BigDecimal?) {
         val mock = coEvery {
             currencyControllerApi.getCurrencyRate(
@@ -240,5 +314,4 @@ class CurrencyServiceTest {
             )
         }
     }
-
 }

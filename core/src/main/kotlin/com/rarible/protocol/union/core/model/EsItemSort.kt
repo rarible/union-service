@@ -1,9 +1,14 @@
 package com.rarible.protocol.union.core.model
 
-data class EsItemSort(
-    val latestFirst: Boolean= true,
-) {
+enum class EsItemSort {
+    LATEST_FIRST,
+    EARLIEST_FIRST,
+    HIGHEST_SELL_PRICE_FIRST,
+    LOWEST_SELL_PRICE_FIRST,
+    HIGHEST_BID_PRICE_FIRST,
+    LOWEST_BID_PRICE_FIRST;
+
     companion object {
-        val DEFAULT = EsItemSort()
+        val DEFAULT = LATEST_FIRST
     }
 }

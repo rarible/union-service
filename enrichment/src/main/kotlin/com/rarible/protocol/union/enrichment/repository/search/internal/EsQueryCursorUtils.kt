@@ -27,6 +27,10 @@ fun mustEqual(fieldName: String, value: Int): QueryBuilder? {
     return TermQueryBuilder(fieldName, value)
 }
 
+fun mustEqual(fieldName: String, value: Double): QueryBuilder? {
+    return TermQueryBuilder(fieldName, value)
+}
+
 fun mustEqual(fieldName: String, value: Instant?): QueryBuilder? {
     if (value == null) return null
     return TermQueryBuilder(fieldName, value)
