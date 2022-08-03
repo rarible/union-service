@@ -1,5 +1,7 @@
 package com.rarible.protocol.union.api.service.select
 
+import com.rarible.core.common.nowMillis
+import com.rarible.protocol.union.api.service.DiscrepancyDetector
 import com.rarible.protocol.union.enrichment.service.query.activity.ActivityQueryService
 import com.rarible.protocol.union.enrichment.service.query.activity.ActivityApiMergeService
 import com.rarible.protocol.union.api.service.elastic.ActivityElasticService
@@ -19,6 +21,7 @@ class ActivitySourceSelectService(
     private val featureFlagsProperties: FeatureFlagsProperties,
     private val activityApiMergeService: ActivityApiMergeService,
     private val activityElasticService: ActivityElasticService,
+    private val discrepancyDetector: DiscrepancyDetector,
 ) {
 
     suspend fun getAllActivities(
@@ -30,7 +33,9 @@ class ActivitySourceSelectService(
         sort: ActivitySortDto?,
         overrideSelect: OverrideSelect?,
     ): ActivitiesDto {
-        return getQuerySource(overrideSelect, sort).getAllActivities(type, blockchains, continuation, cursor, size, sort)
+        return query(getQuerySource(overrideSelect, sort)) {
+            it.getAllActivities(type, blockchains, continuation, cursor, size, sort)
+        }
     }
 
     suspend fun getAllActivitiesSync(
@@ -52,7 +57,9 @@ class ActivitySourceSelectService(
         sort: ActivitySortDto?,
         overrideSelect: OverrideSelect?,
     ): ActivitiesDto {
-        return getQuerySource(overrideSelect, sort).getActivitiesByCollection(type, collection, continuation, cursor, size, sort)
+        return query(getQuerySource(overrideSelect, sort)) {
+            it.getActivitiesByCollection(type, collection, continuation, cursor, size, sort)
+        }
     }
 
     suspend fun getActivitiesByItem(
@@ -64,7 +71,9 @@ class ActivitySourceSelectService(
         sort: ActivitySortDto?,
         overrideSelect: OverrideSelect?,
     ): ActivitiesDto {
-        return getQuerySource(overrideSelect, sort).getActivitiesByItem(type, itemId, continuation, cursor, size, sort)
+        return query(getQuerySource(overrideSelect, sort)) {
+            it.getActivitiesByItem(type, itemId, continuation, cursor, size, sort)
+        }
     }
 
     suspend fun getActivitiesByUser(
@@ -79,7 +88,27 @@ class ActivitySourceSelectService(
         sort: ActivitySortDto?,
         overrideSelect: OverrideSelect?,
     ): ActivitiesDto {
-        return getQuerySource(overrideSelect, sort).getActivitiesByUser(type, user, blockchains, from, to, continuation, cursor, size, sort)
+        return query(getQuerySource(overrideSelect, sort)) {
+            it.getActivitiesByUser(type, user, blockchains, from, to, continuation, cursor, size, sort)
+        }
+    }
+
+    private suspend fun query(
+        chosenService: ActivityQueryService,
+        call: suspend (ActivityQueryService) -> ActivitiesDto,
+    ): ActivitiesDto {
+        val callTime = nowMillis()
+        val result = call(chosenService)
+
+        if (chosenService is ActivityElasticService) {
+            discrepancyDetector.planActivityDiscrepancyCheck(
+                result,
+                { call(activityApiMergeService) },
+                callTime
+            )
+        }
+
+        return result
     }
 
     private fun getQuerySource(overrideSelect: OverrideSelect?, sort: ActivitySortDto?): ActivityQueryService {
